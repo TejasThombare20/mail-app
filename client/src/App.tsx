@@ -1,11 +1,25 @@
 import React from 'react';
 import './App.css';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import PrivateRoute, { AuthProvider } from './context/auth-context';
+import Loginpage from './pages/login-page';
 
 function App() {
   return (
-    <main className='text-red-500 text-5xl'>
-      hello
-    </main>
+<AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Loginpage />} />
+    ā
+          {/* Default Route */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          
+          {/* 404 Route */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
