@@ -9,8 +9,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { initializeApp } from 'firebase/app';
 import {AlertCircle} from "lucide-react"
-import { Alert, AlertDescription } from '../components/Alert';
-import { Button } from '../components/Button';
+import { Alert, AlertDescription } from '../components/ui-component/Alert';
+import { Button } from '../components/ui-component/Button';
 import { firebaseConfig } from '../config/firebaseConfig';
 
 
@@ -38,66 +38,85 @@ const Loginpage = (props: Props) => {
       });
   };
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // console.log("user",user)
-      if (user) {
-        navigate('/dashboard');
-      }
-      console.log("Hello from the dashboard")
-      setTimeout(()=>{
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
+  //     // console.log("user",user)
+  //     if (user) {
+  //       navigate('/dashboard');
+  //     }
+  //     console.log("Hello from the dashboard")
+  //       handleSignOut();
+  //   });
 
-        handleSignOut();
-      }, 5000)
-    });
+  //   // return () => unsubscribe();
+  // }, [navigate]);
 
-    // return () => unsubscribe();
-  }, [navigate]);
+  // const handleGoogleSignIn = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError('');
 
+  //     const provider = new GoogleAuthProvider();
+      
+  //     // Add Gmail API scopes
+  //     provider.addScope('https://www.googleapis.com/auth/gmail.send');
+  //     provider.addScope('https://www.googleapis.com/auth/gmail.compose');
+      
+  //     const result = await signInWithPopup(auth, provider);
+  //     const credential = GoogleAuthProvider.credentialFromResult(result);
+
+
+
+  //     console.log({result ,credential } )
+  //     // @ts-ignore
+  //     console.log("idtoken : ", result.user?.stsTokenManager) 
+
+  //     const idtoken = await result.user.getIdToken()
+
+  //     console.log("simple-id-token",idtoken)
+      
+  //     if (!credential) {
+  //       throw new Error('Failed to get credentials');
+  //     }
+
+  //     // Send token to backend
+  //     const response = await fetch('http://localhost:8000/api/auth/google-signin', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         token: await result.user.getIdToken(),
+  //       }),
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error('Failed to authenticate with backend');
+  //     }
+
+  //     // const { token } = await response.json();
+  //     // localStorage.setItem('token', token);
+      
+  //     navigate('/dashboard');
+  //   } catch (err) {
+  //     console.error('Login error:', err);
+  //     setError(err instanceof Error ? err.message : 'Failed to sign in');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   const handleGoogleSignIn = async () => {
     try {
-      setIsLoading(true);
-      setError('');
+      // Get auth URL from backend
+      const response = await fetch('http://localhost:8000/api/auth/google/url');
+      const { url } = await response.json();
 
-      const provider = new GoogleAuthProvider();
+      console.log("url",url)
       
-      // Add Gmail API scopes
-      provider.addScope('https://www.googleapis.com/auth/gmail.send');
-      provider.addScope('https://www.googleapis.com/auth/gmail.compose');
-      
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-
-      console.log({result ,credential } )
-      
-      if (!credential) {
-        throw new Error('Failed to get credentials');
-      }
-
-      // Send token to backend
-      const response = await fetch('http://localhost:8000/api/auth/google-signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: await result.user.getIdToken(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to authenticate with backend');
-      }
-
-      const { token } = await response.json();
-      localStorage.setItem('token', token);
-      
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sign in');
-    } finally {
-      setIsLoading(false);
+      // Redirect to Google consent screen
+      window.location.href = url;
+    } catch (error) {
+      console.error('Login error:', error);
     }
   };
   return (

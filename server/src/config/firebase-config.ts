@@ -6,6 +6,7 @@ dotenv.config();
 if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccountJson as ServiceAccount),
+      storageBucket : "attachments"
     });
   }
   

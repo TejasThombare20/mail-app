@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { ICreateUser, IUser } from '../types/users';
+import { ICreateUser, IUser } from '../types/users.types';
 
 
 export class UserRepository {
@@ -7,11 +7,11 @@ export class UserRepository {
 
   async createUser(userData: ICreateUser): Promise<IUser> {
     const query = `
-      INSERT INTO users (email, name, picture)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (email, name, picture , id)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
-    const values = [userData.email, userData.name, userData.picture];
+    const values = [userData.email, userData.name, userData.picture , userData.id];
     const result = await this.pool.query(query, values);
     return result.rows[0];
   }

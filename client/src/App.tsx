@@ -1,8 +1,9 @@
 import React from 'react';
 import './App.css';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import PrivateRoute, { AuthProvider } from './context/auth-context';
+import  { AuthProvider } from './context/auth-context';
 import Loginpage from './pages/login-page';
+import Dashboard from './pages/Dashboard-page';
 
 function App() {
   return (
@@ -13,10 +14,10 @@ function App() {
           <Route path="/login" element={<Loginpage />} />
     ā
           {/* Default Route */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           
           {/* 404 Route */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard/>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

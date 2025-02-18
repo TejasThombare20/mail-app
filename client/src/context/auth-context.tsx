@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User } from '../types/auth-types';
 import { Navigate } from 'react-router-dom';
+import Cookies from "js-cookie";
+import { User } from '../types/auth-types';
 
 
 interface AuthContextType {
@@ -8,7 +9,6 @@ interface AuthContextType {
   login: (userData: User) => void;
   logout: () => void;
 }
-
 
 // Create Context
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -50,8 +50,11 @@ interface PrivateRouteProps {
   }
 
 const PrivateRoute = ({ children }: PrivateRouteProps) => {
-    const { user } = useAuth();
-    return user ? <>{children}</> : <Navigate to="/login"/>;
+    // const { user } = useAuth();
+
+    const token = Cookies.get("auth_token");
+
+    return token ? <>{children}</> : <Navigate to="/login"/>;
   };
   
   export default PrivateRoute;
