@@ -7,6 +7,7 @@ import { HistoryRepository } from "../repository/history.repository";
 import { EmailStatus } from "../types/template.types";
 import {
   checkMXRecord,
+  convertTailwindHtmlToSendableEmail,
   createEmailBody,
   isValidEmail,
 } from "../utils/validate-email";
@@ -85,12 +86,17 @@ export class EmailService {
     userId: string,
     templateId: string,
     subject: string,
-    recipients: Array<{ email: string; variables: Record<string, any> }>,
-    globalVariables: Record<string, any>
+    recipients: string[],
+    local_variables: Array<{ key: string; description: string; id: string }>,
+    global_variables: Array<{ key: string; value: string; id: string }>
   ) {
     const gmail = await this.getGmailClient(userId);
-    const template = await this.templateRepository.getTemplateById(templateId);
-    console.log("template", template);
+
+    const template = await this.templateRepository.getTemplateById(
+      templateId,
+      userId
+    );
+
     if (!template) {
       throw new Error("Template not found");
     }
@@ -102,18 +108,17 @@ export class EmailService {
       );
       if (!attachmentsData) {
         console.log("Unable to find attachments");
-        return;
+        throw new Error("Failed to laod attachments");
       }
       if (attachmentsData.length !== template.attachments.length) {
         console.log("One or more attachment IDs are invalid");
+        throw new Error("One or more attachment IDs are invalid");
         return;
       }
 
-      console.log("attachmentsData",attachmentsData)
-
       const bufferedAttachmentsData = await Promise.all(
         attachmentsData.map((attachment) =>
-          this.attachmentService.getAttachmentBase64(attachment)
+          this.attachmentService.getAttachmentBase64(attachment, userId)
         )
       );
 
@@ -124,11 +129,11 @@ export class EmailService {
     const historyRecord = await this.historyRepository.create({
       user_id: userId,
       template_id: templateId,
-      global_variables: globalVariables,
-      receiver_emails: recipients.map((r) => ({
-        email: r?.email,
+      global_variables: global_variables,
+      receiver_emails: recipients.map((email) => ({
+        email: email,
         status: "queued",
-        variables: r?.variables,
+        variables: local_variables,
       })),
       subject: subject,
       status: "pending",
@@ -139,48 +144,39 @@ export class EmailService {
     for (const recipient of recipients) {
       let personalizedHtml = template?.html_content;
 
-      if (
-        !isValidEmail(recipient.email) ||
-        !(await checkMXRecord(recipient.email))
-      ) {
-        console.log(`Invalid email detected: ${recipient.email}`);
-        emailStatuses.push({ email: recipient.email, status: "invalid" });
+      if (!isValidEmail(recipient) || !(await checkMXRecord(recipient))) {
+        console.log(`Invalid email detected: ${recipient}`);
+        emailStatuses.push({ email: recipient, status: "invalid" });
         continue;
       }
 
       // Replace global variables
-      Object.entries(globalVariables).forEach(([key, value]) => {
+      global_variables.forEach(({ key, value }) => {
         personalizedHtml = personalizedHtml.replace(
           new RegExp(`{{${key}}}`, "g"),
           String(value)
         );
       });
 
-      // Replace recipient-specific variables
-      Object.entries(recipient.variables).forEach(([key, value]) => {
+      local_variables.forEach(({ description, id, key }) => {
         personalizedHtml = personalizedHtml.replace(
           new RegExp(`{{${key}}}`, "g"),
-          String(value)
+          String(description)
         );
       });
 
-      // const encodedMessage = Buffer.from(
-      //   `To: ${recipient?.email}\r\n` +
-      //     `Subject: ${subject}\r\n` +
-      //     "Content-Type: text/html; charset=utf-8\r\n" +
-      //     "MIME-Version: 1.0\r\n" +
-      //     "\r\n" +
-      //     personalizedHtml
-      // )
-      //   .toString("base64")
-      //   .replace(/\+/g, "-")
-      //   .replace(/\//g, "_");
+      const HTML = `
+      <div><div class="relative p-4 transition-all group h-full overflow-scroll " draggable="false"><div class="items-center border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80 absolute -top-[23px] -left-[1px] rounded-none rounded-t-lg hidden">Body</div><div class="p-[2px] w-full m-[5px] relative text-[16px] transition-all !border-blue-500 !border-solid" style="color: rgb(217, 32, 211); background-position: center center; object-fit: cover; background-repeat: no-repeat; text-align: left; opacity: 1; font-family: &quot;Courier New&quot;, monospace; font-size: 50px; line-height: 2; padding: 10px; font-weight: bold;"><span contenteditable="false">Welcome from client side ....&nbsp;</span></div></div></div>
+      `;
+
+      const testEmail =   convertTailwindHtmlToSendableEmail(HTML);
+
       const emailBody = createEmailBody(
         recipient,
         subject,
         personalizedHtml,
         attachements
-      );
+      );    
 
       // Encode the entire message
       const encodedMessage = Buffer.from(emailBody)
@@ -196,53 +192,51 @@ export class EmailService {
 
         if (response?.status === 200) {
           emailStatuses.push({
-            email: recipient?.email,
+            email: recipient,
             status: "sent",
-            variables: recipient?.variables,
+            variables: local_variables,
           });
+
           // Update individual recipient status
           await this.historyRepository.updateRecipientStatus(
             historyRecord.id,
-            recipient.email,
+            recipient,
             "sent"
           );
         } else {
           emailStatuses.push({
-            email: recipient.email,
+            email: recipient,
             status: "failed",
-            variables: recipient.variables,
+            variables: local_variables,
           });
 
           // Update individual recipient status
           await this.historyRepository.updateRecipientStatus(
             historyRecord.id,
-            recipient.email,
+            recipient,
             "failed"
           );
         }
-        console.log(`response of email ${recipient?.email}`, response?.data);
+        console.log(`response of email ${recipient}`, response?.data);
 
         console.log("db updated");
       } catch (emailError) {
-        console.error(
-          `Error while sending email to ${recipient?.email}:`,
-          emailError
-        );
+        console.error(`Error while sending email to ${recipient}:`, emailError);
 
         emailStatuses.push({
-          email: recipient?.email,
+          email: recipient,
           status: "failed",
-          variables: recipient?.variables,
+          variables: local_variables,
         });
 
         try {
           await this.historyRepository.updateRecipientStatus(
             historyRecord.id,
-            recipient?.email,
+            recipient,
             "failed"
           );
         } catch (dbError) {
-          console.error(`DB update failed for ${recipient?.email}:`, dbError);
+          console.error(`DB update failed for ${recipient}:`, dbError);
         }
       }
     }

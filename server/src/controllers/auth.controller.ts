@@ -4,37 +4,39 @@ import { AuthService } from "../services/auth.service";
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  getAuthUrl = (req: Request, res: Response): void => {
+  getAuthUrl = async(req: Request, res: Response): Promise<void> => {
     try {
-      const url = this.authService.getAuthUrl();
-      res.json({ url });
+      const url =  await this.authService.getAuthUrl();
+      if(!url){
+        res.status(500).json({ message :"Internal Server Error" ,error: "Failed to generate authorization URL from google server" , success : false })
+        return;
+      }
+
+    res.status(200).json({ data : url, message : "consent screen url fetch successfully" , success : true });
     } catch (error) {
       console.error("Auth error:", error);
-      res.status(500).json({ error: "Failed to get authorization URL" });
+      res.status(500).json({ message :"Internal Server Error" ,error: "Failed to get authorization URL" , success : false });
     }
   };
 
-handleCallback = async (req: Request, res: Response): Promise<void> => {
+  handleCallback = async (req: Request, res: Response): Promise<void> => {
     try {
-
       const { code } = req.query;
 
       if (!code || typeof code !== "string") {
         res.status(400).json({ error: "Authorization code required" });
         return;
       }
-
       const { token: JWT_token } = await this.authService.handleGoogleCallback(
         code
       );
-
       res.cookie("auth_token", JWT_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 24 * 60 * 60 * 1000,
       });
-      
+
       res.redirect("http://localhost:3000/dashboard");
       // res.json(result);
     } catch (error) {

@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import { Attachment } from "../types/attachment.types";
+import e from "express";
 
 export class AttachmentRepository {
   constructor(private pool: Pool) {} // Replace 'any' with your database client type
@@ -31,12 +32,17 @@ export class AttachmentRepository {
     }
   }
 
-  async findById(id: string): Promise<Attachment | null> {
-    const result = await this.pool.query(
-      "SELECT * FROM attachments WHERE id = $1",
-      [id]
-    );
-    return result.rows[0] || null;
+  async findById(id: string, user_id: string): Promise<Attachment | null> {
+    try {
+      const result = await this.pool.query(
+        "SELECT * FROM attachments WHERE id = $1 AND user_id = $2",
+        [id, user_id]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      console.log("error while fetching attachment by Id", error);
+      return null;
+    }
   }
 
   async findByIds(ids: string[]): Promise<Attachment[] | null> {
@@ -53,14 +59,68 @@ export class AttachmentRepository {
     }
   }
 
+  async findByUserId(userId: string): Promise<Attachment[] | null> {
+    try {
+      const result = await this.pool.query(
+        "SELECT * FROM attachments WHERE user_id = $1",
+        [userId]
+      );
+      return result?.rows;
+    } catch (error) {
+      console.log("error while finding attachments by user id", error);
+      return null;
+    }
+  }
+
   async delete(id: string): Promise<boolean> {
-    const result = await this.pool.query(
-      "DELETE FROM attachments WHERE id = $1 RETURNING id",
-      [id]
-    );
-    if (!result) {
+    try {
+      const result = await this.pool.query(
+        "DELETE FROM attachments WHERE id = $1 RETURNING id",
+        [id]
+      );
+      if (!result) {
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.log("error while deleting attachment from ", error);
       return false;
     }
-    return true;
+  }
+
+  async UpdateAttachment( user_id : string, attachment_id : string, attachement : Partial<Attachment>) : Promise<Attachment | null>{
+
+    try {
+      const query = `
+        UPDATE attachments
+          SET 
+            file_name = COALESCE($1, file_name),
+            file_size = COALESCE($2, file_size),
+            file_url = COALESCE($3, file_url),
+            file_type = COALESCE($4, file_type),
+            filepath = COALESCE($5, filepath),
+            expires_at = COALESCE($6::timestamp, expires_at)
+        WHERE id = $7 AND user_id = $8
+        RETURNING *;
+      `;
+      const values = [
+        attachement.file_name,
+        attachement?.file_size,
+        attachement?.file_url,
+        attachement?.file_type,
+        attachement?.filepath,
+        attachement?.expires_at ? new Date(attachement.expires_at).toISOString() : null,
+        attachment_id,
+        user_id,
+      ];
+      
+      const result = await this.pool.query(query , values)
+      return result.rows[0];
+      
+    } catch (error) {
+      console.log("error while updating the attachment" , error)
+      return null;
+    }
+
   }
 }

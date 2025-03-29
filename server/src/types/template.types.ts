@@ -1,5 +1,14 @@
 import { Attachment } from "./attachment.types";
 
+
+export interface variable {
+  key: string;
+  id : string;
+  description?: string;
+  value?: string;
+}
+
+
 export interface ITemplate {
   id: string;
   user_id: string;
@@ -10,6 +19,8 @@ export interface ITemplate {
   category: string;
   created_at: Date;
   updated_at: Date;
+  local_variables :variable[];
+  global_variables : variable[];
   attachmentsdata?: Attachment[];
 }
 

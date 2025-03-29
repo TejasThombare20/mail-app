@@ -1,5 +1,6 @@
 import { Pool } from "pg";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+import { EmailLog } from "../types/historyLogs.types";
 
 export class HistoryRepository {
   constructor(private pool: Pool) {}
@@ -28,7 +29,7 @@ export class HistoryRepository {
         JSON.stringify(data.receiver_emails),
         data.subject,
         data.status,
-        uuidv4()
+        uuidv4(),
       ]
     );
     return result.rows[0];
@@ -42,28 +43,6 @@ export class HistoryRepository {
       [status, historyId]
     );
   }
-
-  // async updateRecipientStatus(historyId: number, email: string, status: string) {
-  //   await this.pool.query(
-  //     `UPDATE email_logs
-  //      SET receiver_emails = jsonb_set(
-  //        receiver_emails,
-  //        '{' || (
-  //          SELECT array_position(
-  //            ARRAY(
-  //              SELECT jsonb_array_elements(receiver_emails)->>'email'
-  //            ),
-  //            $1
-  //          ) - 1 || ',status}',
-  //          '"' || $2 || '"'
-  //        ),
-  //        true
-  //      ),
-  //      last_updated = NOW()
-  //      WHERE id = $3`,
-  //     [email, status, historyId]
-  //   );
-  // }
 
   async updateRecipientStatus(
     historyId: number,
@@ -86,4 +65,34 @@ export class HistoryRepository {
       [email, status, historyId]
     );
   }
+
+  async getUserLogs (user_id: string, last_sent_at : string | null = null) : Promise<EmailLog[] | null>{
+    try {
+      const query = `
+        SELECT 
+            el.id,
+            el.user_id,
+            el.template_id,
+            t.name AS template_name,
+            el.global_variables,
+            el.receiver_emails,
+            el.subject,
+            el.status,
+            el.sent_at,
+            el.last_updated
+        FROM email_logs el
+        LEFT JOIN templates t ON el.template_id = t.id
+        WHERE el.user_id = $1
+        AND ($2::timestamp IS NULL OR el.sent_at < $2)
+        ORDER BY el.sent_at DESC
+        LIMIT 10;
+    `;
+      const values = [user_id,last_sent_at ? new Date(last_sent_at).toISOString() : null];
+      const result = await this.pool.query(query, values);
+      return result.rows 
+    } catch (error) {
+      console.log("error while fetching user email logs" , error);
+      return null;
+    }
+  };
 }

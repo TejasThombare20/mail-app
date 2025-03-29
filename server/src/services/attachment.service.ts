@@ -1,6 +1,10 @@
 import { MediaStorage } from "../config/media-storage";
 import { AttachmentRepository } from "../repository/attachment.repository";
-import { Attachment, EmailAttachment, UploadedFile } from "../types/attachment.types";
+import {
+  Attachment,
+  EmailAttachment,
+  UploadedFile,
+} from "../types/attachment.types";
 import axios from "axios";
 
 export class AttachmentService {
@@ -54,8 +58,42 @@ export class AttachmentService {
     return attachments;
   }
 
-  async deleteAttachment(id: string): Promise<void> {
-    const attachment = await this.attachmentRepository.findById(id);
+  async getAttachmentsByUserId(userId: string): Promise<Attachment[] | null> {
+    try {
+      const attachments = await this.attachmentRepository.findByUserId(userId);
+
+      if (!attachments) {
+        return null;
+      }
+      return attachments;
+    } catch (error) {
+      console.log("error while fetching user's attachments", error);
+      return null
+    }
+  }
+  
+  async getUpdatedAttachmentById(attachment_id : string, user_id : string ) : Promise<Attachment | null> {
+    try {
+        const attachment = await this.attachmentRepository.findById(attachment_id ,user_id );
+        if (!attachment) {
+         return null;
+        }
+        if (attachment.expires_at.getTime() < Date.now()) {
+         const attachmentMetaData =  await this.getAttachmentBase64(attachment , user_id)
+         if(attachmentMetaData){
+          attachment.expires_at  = attachmentMetaData.expires_at,
+          attachment.file_url = attachmentMetaData.file_url
+         }
+        }
+        return attachment;
+    } catch (error) {
+      console.log("error getting attachment by id in repository", error);
+      return null
+    }
+  }
+
+  async deleteAttachment(id: string , user_id : string ): Promise<void> {
+    const attachment = await this.attachmentRepository.findById(id , user_id);
     if (!attachment) {
       throw new Error("Attachment not found");
     }
@@ -77,11 +115,13 @@ export class AttachmentService {
     return;
   }
 
-  async getAttachmentBase64(attachment: Attachment) : Promise<EmailAttachment | null> {
-    
+  async getAttachmentBase64(
+    attachment: Attachment,
+    userId : string
+  ): Promise<EmailAttachment | null> {
     if (new Date(attachment.expires_at) < new Date()) {
       console.log(
-        `URL expired for file: ${attachment.file_name}, regenerating...`
+        `URL expired for file: ${attachment.file_name}, with expiry date : ${attachment.expires_at} regenerating...`
       );
       const signUrl = await this.mediaStorage.generateSignedUrl(
         attachment.filepath
@@ -92,6 +132,19 @@ export class AttachmentService {
         return null;
       }
       attachment.file_url = signUrl;
+      attachment.expires_at.setDate(new Date().getDate() + 7);
+
+      const updatedAttachment = await this.attachmentRepository.UpdateAttachment(
+         userId,
+        attachment.id,
+         {
+          expires_at : attachment.expires_at,
+          file_url : attachment.file_url,
+         }
+      );
+      if (!updatedAttachment){
+        console.log("failed to update attachments url and expiry time ... ")
+      }
     }
 
     try {
@@ -106,6 +159,8 @@ export class AttachmentService {
 
       return {
         filename: attachment.file_name,
+        expires_at : attachment.expires_at,
+        file_url  : attachment.file_url,
         content: Buffer.from(response.data).toString("base64"),
         mimeType:
           response.headers["content-type"] || "application/octet-stream",

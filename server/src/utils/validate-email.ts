@@ -1,4 +1,5 @@
 import dns from "dns";
+import juice from "juice";
 import { EmailAttachment } from "../types/attachment.types";
 
 export function isValidEmail(email: string): boolean {
@@ -16,12 +17,12 @@ export async function checkMXRecord(email: string): Promise<boolean> {
 }
 
 export  function createEmailBody(
-  recipient: { email: string; variables: Record<string, any> },
+  recipient: string,
   subject: string,
   personalizedHtml: string,
   attachmentsData: (EmailAttachment | null)[]
 ): string {
-  let emailBody = `To: ${recipient.email}\r\n` +
+  let emailBody = `To: ${recipient}\r\n` +
     `Subject: ${subject}\r\n` +
     "MIME-Version: 1.0\r\n" +
     "Content-Type: multipart/mixed; boundary=boundary123\r\n" +
@@ -47,5 +48,45 @@ export  function createEmailBody(
   
   emailBody += "--boundary123--";
   return emailBody;
+}
+
+
+
+
+
+/**
+ * Converts Tailwind-based HTML into inline-styled email-safe HTML for Gmail API
+ * @param rawHtml - Tailwind HTML string from the editor
+ * @returns Base64-encoded, RFC-compliant HTML string ready for Gmail API
+ */
+
+const tailwindBaseStyles = `@import url('https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css');`;
+
+export function convertTailwindHtmlToSendableEmail(rawHtml: string): string {
+  // 1. Wrap raw HTML with full email HTML structure
+
+  
+
+
+  const fullHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>Email</title>
+        <style>
+          ${tailwindBaseStyles}
+        </style>
+      </head>
+      <body>
+        ${rawHtml}
+      </body>
+    </html>
+  `;
+
+  // 2. Inline styles using Juice
+  const inlinedHtml = juice(fullHtml);
+
+  return inlinedHtml;
 }
 

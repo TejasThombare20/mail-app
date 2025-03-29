@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { 
   getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup,
-  onAuthStateChanged, 
-  signOut
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { initializeApp } from 'firebase/app';
@@ -12,6 +8,9 @@ import {AlertCircle} from "lucide-react"
 import { Alert, AlertDescription } from '../components/ui-component/Alert';
 import { Button } from '../components/ui-component/Button';
 import { firebaseConfig } from '../config/firebaseConfig';
+import apiHandler, { ApiError } from '../handlers/api-handler';
+import { getGoolgleUrlApiResponse } from '../types/api-response-type';
+import { useHandleApiError } from '../handlers/useErrorToast';
 
 
 type Props = {}
@@ -24,19 +23,21 @@ const Loginpage = (props: Props) => {
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignOut = () => {
-    signOut(auth)
-      .then(() => {
-        // Sign-out successful.
-        console.log("User signed out successfully.");
-        // Optionally, redirect the user to the login page or another route
-        navigate("/login");
-      })
-      .catch((error) => {
-        // An error happened during sign-out.
-        console.error("Error signing out:", error);
-      });
-  };
+    const showErrorToast = useHandleApiError();
+
+  // const handleSignOut = () => {
+  //   signOut(auth)
+  //     .then(() => {
+  //       // Sign-out successful.
+  //       console.log("User signed out successfully.");
+  //       // Optionally, redirect the user to the login page or another route
+  //       navigate("/login");
+  //     })
+  //     .catch((error) => {
+  //       // An error happened during sign-out.
+  //       console.error("Error signing out:", error);
+  //     });
+  // };
 
   // useEffect(() => {
   //   const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -107,16 +108,22 @@ const Loginpage = (props: Props) => {
   // };
   const handleGoogleSignIn = async () => {
     try {
-      // Get auth URL from backend
-      const response = await fetch('http://localhost:8000/api/auth/google/url');
-      const { url } = await response.json();
+      setIsLoading(true);
+      console.log("Hello")
+        const responseData = await apiHandler.get<getGoolgleUrlApiResponse>('/api/auth/google/url');
+        console.log("responseData", responseData?.data)
 
-      console.log("url",url)
-      
-      // Redirect to Google consent screen
-      window.location.href = url;
+        if (!responseData?.success && responseData?.data){
+          throw new Error("something went wrong")
+          return;
+        }
+        window.location.href = responseData?.data!
+
+        setIsLoading(false);
+
     } catch (error) {
-      console.error('Login error:', error);
+      setIsLoading(false)
+      showErrorToast(error as ApiError)
     }
   };
   return (

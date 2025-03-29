@@ -1,5 +1,5 @@
 export interface Attachment {
-  id: number;
+  id: string;
   file_name: string;
   file_url: string;
   file_type: string;
@@ -51,4 +51,6 @@ export interface EmailAttachment {
   filename: string;
   content: string; 
   mimeType: string;
+  expires_at  : Date
+  file_url : string;
 };

@@ -12,7 +12,7 @@ export class MediaStorage {
       process.env.SUPABASE_SERVICE_KEY!
     );
     this.bucketName = "attachments";
-    this.urlExpiryTime = 3600;
+    this.urlExpiryTime = 518400;
   }
 
   async uploadFile(
@@ -27,7 +27,7 @@ export class MediaStorage {
         .from(this.bucketName)
         .upload(filePath, file.buffer, {
           contentType: file.mimetype,
-          cacheControl: "3600",
+          cacheControl: "518400",
           upsert: false,
         });
 

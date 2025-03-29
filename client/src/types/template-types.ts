@@ -1,11 +1,29 @@
+import { UUIDTypes } from "uuid";
 import { Attachment } from "./attachment.type";
+
+export interface TemplateVariable {
+  key: string;
+  description: string;
+  id : string;
+  value?: string;
+}
+
+export interface GlobalTemplateVariable {
+  key: string;
+  id : string;
+  description?: string;
+  value ? : string;
+}
+
 
 export interface TemplateData {
     name: string;
     category: string;
     json_data: any;
     html_content: string;
-    attachments?: File[];
+    attachments: File[];
+    localVariables: TemplateVariable[];
+    globalVariables: TemplateVariable[];
   }
   
 
@@ -14,8 +32,11 @@ export interface EmailTemplate {
     name: string;
     category: string;
     attachments: Attachment[];
-    html?: string;
-    design?: any;
+    json_data : any;
+    html_content: string;
+    local_variables: TemplateVariable[];
+    global_variables: GlobalTemplateVariable[];
+
   } 
 
 export interface Design {

@@ -5,10 +5,11 @@ import { ITemplate } from "../types/template.types";
 export class TemplateRepository {
     constructor(private pool: Pool) {}
   
-    async createTemplate(template: Omit<ITemplate, 'id' | 'created_at' | 'updated_at'>): Promise<ITemplate> {
+    async createTemplate(template: Omit<ITemplate, 'id' | 'created_at' | 'updated_at'>): Promise<ITemplate | null> {
+      try {
       const query = `
-        INSERT INTO templates (user_id, name, json_data, html_content, attachments, category, id )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO templates (user_id, name, json_data, html_content, attachments, category, id, local_variables, global_variables )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `;
       const values = [
@@ -18,23 +19,71 @@ export class TemplateRepository {
         template?.html_content,
         template?.attachments,
         template?.category,
-        uuidv4()
+        uuidv4(),
+        JSON.stringify(template?.local_variables || []),  
+        JSON.stringify(template?.global_variables || []) 
       ];
       const result = await this.pool.query(query, values);
       return result.rows[0];
+
+    } catch (error) {
+      console.log("error while creating new template",error)
+        return null
     }
+    }
+
+  async updateUserTemplate( user_id : string, template : Partial<ITemplate>,templateId : string ) : Promise<ITemplate | null> {
+    try {
+
+        const query = `
+          UPDATE templates 
+          SET 
+            name = COALESCE($1, name),
+            json_data = COALESCE($2, json_data),
+            html_content = COALESCE($3, html_content),
+            attachments = COALESCE($4, attachments),
+            category = COALESCE($5, category),
+            local_variables = COALESCE($6, local_variables),
+            global_variables = COALESCE($7, global_variables)
+          WHERE id = $8 AND user_id = $9
+          RETURNING *;
+      `;
+      const values = [
+        template?.name,
+        template?.json_data,
+        template?.html_content,
+        template?.attachments,
+        template?.category,
+        template?.local_variables ? JSON.stringify(template.local_variables) : null,
+        template?.global_variables ? JSON.stringify(template.global_variables) : null,
+        templateId,
+        user_id
+      ];
+      
+      const result = await this.pool.query(query , values)
+      return result.rows[0];
+    } catch (error) {
+      console.log("error while updating template", error);
+      return null
+    }
+  }
   
-    async getUserTemplates(userId: string): Promise<ITemplate[]> {
+    async getUserTemplates(userId: string): Promise<ITemplate[] | null> {
+      try {
       const query = 'SELECT * FROM templates WHERE user_id = $1 ORDER BY created_at DESC';
       const result = await this.pool.query(query, [userId]);
       return result.rows;
+    } catch (error) {
+      console.log("error while fetching  user Teplates data from DB ",error)
+      return null;
+    }
     }
 
-    async getTemplateById(id: string): Promise<ITemplate | null> {
+    async getTemplateById(id: string , user_id : string): Promise<ITemplate | null> {
       try {
       const result = await this.pool.query(
-         `SELECT * FROM templates WHERE id = $1;`,
-        [id]
+         `SELECT * FROM templates WHERE id = $1 AND user_id = $2;`,
+        [id , user_id]
       );
       
       if (!result.rows[0]) return null;

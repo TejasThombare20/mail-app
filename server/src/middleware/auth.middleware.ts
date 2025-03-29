@@ -11,10 +11,11 @@ export const authMiddleware = (
     next: NextFunction
   ): void => {
     try {
-      const token = req.headers.authorization?.split(' ')[1];
-  
+
+      const token = req.cookies.auth_token; 
+      
       if (!token) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: 'Authentication required' , message : "User not authenticated" ,success : false });
         return;
       }
   
@@ -26,6 +27,7 @@ export const authMiddleware = (
       req.user = decoded;
       next();
     } catch (error) {
-      res.status(401).json({ error: 'Invalid token' });
+      console.log("error", error);
+      res.status(401).json({ error: 'Invalid token' , message : "Token expired error " , success : false  });
     }
   };

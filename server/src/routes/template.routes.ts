@@ -7,7 +7,9 @@ export const createTemplateRouter = (templateController: TemplateController): Ro
   
     router.post('/', authMiddleware, templateController.createTemplate);
     router.get('/', authMiddleware, templateController.getUserTemplates);
-    router.post('/:id/send', authMiddleware, templateController.sendEmail);
+    // router.post('/:id/send', authMiddleware, templateController.sendEmail);
+    router.get('/:id' , authMiddleware, templateController.getTemplateById)
+    router.put('/:id', authMiddleware, templateController.updateUserTemplate)
   
     return router;
   };
