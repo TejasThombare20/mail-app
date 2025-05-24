@@ -37,7 +37,9 @@ export class AuthController {
         maxAge: 24 * 60 * 60 * 1000,
       });
 
-      res.redirect("http://localhost:3000/dashboard");
+      const redirectUrl =  process.env.CLIENT_URL! + process.env.AUTH_REDIRECT_ENDPOINT! 
+
+      res.redirect(redirectUrl);
       // res.json(result);
     } catch (error) {
       console.error("Auth error:", error);
