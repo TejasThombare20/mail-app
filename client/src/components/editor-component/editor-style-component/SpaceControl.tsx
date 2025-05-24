@@ -56,7 +56,7 @@ const SpacingControl = ({
         });
       }
       wasAdvanced.current = showAdvanced;
-    }, [showAdvanced]);
+    }, [showAdvanced ,allSidesValue]);
 
 
 

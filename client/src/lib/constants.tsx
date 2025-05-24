@@ -1,5 +1,10 @@
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Code,
+  Columns2,
   Heading,
   Image,
   Menu,
@@ -55,8 +60,19 @@ export const FONT_WEIGHTS = [
   { label: "900", value: "900" },
 ];
 
+export const LETTER_SPACING = [
+  { label: "Extra Tight", value: "-1" },
+  { label: "Tight", value: "-0.5" },
+  { label: "Standard", value: "0" },
+  { label: "Slightly Wide", value: "0.5" },
+  { label: "Wide", value: "1" },
+  { label: "Extra Wide", value: "2" },
+  { label: "Ultra Wide", value: "4" }
+];
+
 export const COMPONENT_BUTTONS = [
   { name: "Text", icon: <Type className="h-4 w-4" />, type: "text" },
+  {name : "columns", icon: <Columns2  className="h-4 w-4"/> , type: "container"},
   {
     name: "Button",
     icon: <MousePointerClick className="h-4 w-4" />,
@@ -82,6 +98,31 @@ export const BLOCK_LAYOUTS = [
   { name: "Two Columns (67/33)", columns: [67, 33] },
   { name: "Single Column (100)", columns: [100] },
 ];
+
+export const TEXT_ALIGN_OPTIONS = [
+  { value: "left", icon: AlignLeft },
+  { value: "center", icon: AlignCenter },
+  { value: "right", icon: AlignRight },
+  { value: "justify", icon: AlignJustify },
+];
+
+export const BORDER_STYLES = [
+  { label: 'Solid', value: 'solid' },
+  { label: 'Dotted', value: 'dotted' },
+  { label: 'Dashed', value: 'dashed' },
+  { label: 'None', value: 'none' },
+];
+
+
+export const COLUMN_LAYOUTS = [
+  { label: '2 Columns (50/50)', value: '50-50', columns: ['50%', '50%'] },
+  { label: '2 Columns (67/33)', value: '67-33', columns: ['67%', '33%'] },
+  { label: '2 Columns (33/67)', value: '33-67', columns: ['33%', '67%'] },
+  { label: '3 Columns (33/33/33)', value: '33-33-33', columns: ['33%', '33%', '33%'] },
+  { label: '4 Columns (25/25/25/25)', value: '25-25-25-25', columns: ['25%', '25%', '25%', '25%'] },
+  { label: '4 Columns (33/17/33/17)', value: '33-17-33-17', columns: ['33%', '17%', '33%', '17%'] },
+];
+
 
 export const STYLE_PROPERTY_KEYS = [
   "fontSize",
@@ -114,7 +155,7 @@ export const STYLE_PROPERTIES: Record<string, GroupedStyleField> = {
     key: "fontFamily",
     label: "Font Family",
     type: "input",
-    defaultValue: { Desktop: "Times New Roman", Tablet: "Times New Roman", Mobile: "Times New Roman" },
+    defaultValue: { Desktop: "Arial, sans-serif", Tablet: "Arial, sans-serif", Mobile: "Arial, sans-serif" },
     tooltip: "Set different style of the text",
     group: "Typography",
   },
@@ -150,11 +191,19 @@ export const STYLE_PROPERTIES: Record<string, GroupedStyleField> = {
     label: "Line Height",
     type: "input",
     defaultValue: { Desktop: "1.5", Tablet: "1.4", Mobile: "1.3" },
-    units: [],
+    units: ["px"],
     tooltip: "Adjusts spacing between lines of text",
     group: "Typography",
   },
-
+  letterSpacing: {
+    key: "letterSpacing",
+    label: "Letter Spacing",
+    type: "input",
+    defaultValue: { Desktop: "0.05", Tablet: "0.04em", Mobile: "0.03em" },
+    units: ["px"],
+    tooltip: "Adjusts spacing between letters",
+    group: "Typography",
+  },
   // Decorations
   backgroundColor: {
     key: "backgroundColor",

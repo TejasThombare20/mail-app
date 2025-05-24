@@ -1,9 +1,11 @@
 import React from "react";
 
 import TextComponent from "./Text";
-import Container from "./Container";
+
 import LinkComponent from "./Link-component";
 import { EditorElement } from "../../../providers/email-editor/editor-provider";
+import Container from "./Container";
+import Body from "./Body";
 
 type Props = {
   element: EditorElement;
@@ -21,7 +23,7 @@ const Recursive = ({ element }: Props) => {
       return <Container element={element} />;
 
     case "__body":
-      return <Container element={element} />;
+      return <Body element={element} />;
 
     case "link":
       return <LinkComponent element={element} />;

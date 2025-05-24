@@ -4,23 +4,27 @@ import { FONT_FAMILIES, STYLE_PROPERTIES } from "src/lib/constants";
 import { getStyleValueForSelectedElement } from "src/lib/utils";
 
 
-interface FontFamilyProps {
+interface OptionsPickerProps {
     value: string;
     onChange: (value: string) => void;
+    options  : { label: string; value: string; }[]
+    label   :string;
+    placeHolder :string;
+
   }
   
-const FontFamily = ({ value, onChange }: FontFamilyProps) => {
+const OptionsPicker = ({ value, onChange ,options , label ,placeHolder }: OptionsPickerProps) => {
     return (
       <div>
-        <Label className="text-sm text-muted-foreground">Font Family</Label>
+        <Label className="text-sm text-muted-foreground">{label}</Label>
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Select font family" />
+            <SelectValue placeholder={placeHolder} />
           </SelectTrigger>
           <SelectContent>
-            {FONT_FAMILIES.map((font) => (
-              <SelectItem key={font.value} value={font.value}>
-                {font.label}
+            {options.map((option) => (
+              <SelectItem key={option?.value} value={option?.value}>
+                {option?.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -29,5 +33,5 @@ const FontFamily = ({ value, onChange }: FontFamilyProps) => {
     );
   };
   
-  export default FontFamily;
+  export default OptionsPicker;
   

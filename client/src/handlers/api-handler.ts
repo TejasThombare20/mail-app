@@ -3,8 +3,8 @@
 
   const BASE_URL =
     process.env.NODE_ENV === "production"
-      ? process.env.REACT_APP_PROD_SERVER
-      : process.env.REACT_APP_LOCAL_SERVER;
+      ? import.meta.env.VITE_PROD_SERVER
+      : import.meta.env.VITE_LOCAL_SERVER;
 
   const DEFAULT_HEADERS = {
     "Content-Type": "application/json",

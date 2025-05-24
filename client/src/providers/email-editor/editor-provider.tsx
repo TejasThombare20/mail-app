@@ -99,6 +99,8 @@ const updateAnElement = (
   }
   return editorArray.map((item) => {
     if (item.id === action.payload.elementDetails.id) {
+      console.log("item", item);
+      console.log("action.payload.elementDetails", action.payload.elementDetails);
       return { ...item, ...action.payload.elementDetails };
     } else if (item.content && Array.isArray(item.content)) {
       return {
@@ -133,7 +135,7 @@ const editorReducer = (
   action: EditorAction
 ): EditorState => {
   switch (action.type) {
-    case "ADD_ELEMENT":
+    case "ADD_ELEMENT":          
       const updatedEditorState = {
         ...state.editor,
         elements: addAnElement(state.editor.elements, action),

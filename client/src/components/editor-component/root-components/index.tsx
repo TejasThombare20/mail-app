@@ -1,7 +1,6 @@
 import clsx from "clsx";
 import { EyeOff } from "lucide-react";
-import React, { useEffect, useRef } from "react";
-import Recursive from "./recursive";
+import { useEffect, useRef } from "react";
 import { useEditor } from "../../../providers/email-editor/editor-provider";
 import { Button } from "../../ui-component/Button";
 import RenderedTemplate from "../rendered-template/rendered-template";
@@ -21,23 +20,6 @@ const EmailEditorGround = ({ liveMode }: Props) => {
     }
   }, [liveMode]);
 
-  //   useEffect(() => {
-  //     const fetchData = async () => {
-  //       const response = await getFunnelPageDetails(funnelPageId);
-
-  //       // console.log("response", response);
-  //       if (!response) return;
-
-  //       dispatch({
-  //         type: "LOAD_DATA",
-  //         payload: {
-  //           elements: response.content ? JSON.parse(response?.content) : "",
-  //           withLive: !!liveMode,
-  //         },
-  //       });
-  //     };
-  //     fetchData();
-  //   }, [funnelPageId]);
 
   const handleClick = () => {
     dispatch({
@@ -86,14 +68,10 @@ const EmailEditorGround = ({ liveMode }: Props) => {
           <Button onClick={getHTML}>getHTML </Button>
         </>
       )}
-      <div  ref={editorRef} id="email-editor">
+      <div className="w-full h-full"  ref={editorRef} id="email-editor">
         {Array.isArray(state.editor.elements) && (
           <RenderedTemplate state={state} />
         )}
-        {/* {Array.isArray(state.editor.elements) &&
-          state.editor.elements.map((childElement) => {
-            return <Recursive key={childElement.id} element={childElement} />;
-          })} */}
       </div>
     </div>
   );

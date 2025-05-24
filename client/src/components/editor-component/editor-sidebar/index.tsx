@@ -37,7 +37,7 @@ const EmailEditorSidebar = ({}: Props) => {
           showX={false}
           side="right"
           className={clsx(
-            "mt-[97px] w-16  shadow-none  p-0 focus:border-none transition-all overflow-hidden",
+            "mt-[97px] w-16  shadow-none  p-0 focus:border-none transition-all overflow-y-scroll",
             { hidden: state.editor.previewMode }
           )}
         >
@@ -47,7 +47,7 @@ const EmailEditorSidebar = ({}: Props) => {
           showX={false}
           side="right"
           className={clsx(
-            "mt-[97px] w-80  shadow-none p-0 mr-16 bg-background h-full transition-all overflow-hidden ",
+            "mt-[97px] w-80  shadow-none p-0 mr-16 bg-background h-full transition-all overflow-y-scroll ",
             { hidden: state.editor.previewMode }
           )}
         >
@@ -70,7 +70,9 @@ const EmailEditorSidebar = ({}: Props) => {
     {
       selectedElement && selectedElement?.type 
         &&!state.editor.previewMode && !state.editor.liveMode && (
+          <div className="fixed top-[97px] right-0 w-80   h-[calc(100vh-97px)] shadow-none p-0 mr-16 bg-background transition-all ">
         <StyleComponentLoader/>
+          </div>
       )
     }
     </>
