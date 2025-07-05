@@ -4,14 +4,14 @@ import {
 } from "src/components/ui-component/Accordian";
 import { Label } from "src/components/ui-component/Label";
 import { useEditor } from "src/providers/email-editor/editor-provider";
-import NumberInput from "../../editor-style-component/NumberInput";
-import ColorPicker from "../../editor-style-component/ColorPicker";
 import { Button } from "src/components/ui-component/Button";
-import SpacingControl from "../../editor-style-component/SpaceControl";
 import AccordianHOC from "./helper/Accordian-HOC";
 import { getStyleValueForSelectedElement } from "src/lib/utils";
 import { FONT_FAMILIES, FONT_WEIGHTS, STYLE_PROPERTIES, TEXT_ALIGN_OPTIONS } from "src/lib/constants";
-import OptionsPicker from "../../editor-style-component/OptionsPicker";
+import OptionsPicker from "./reusable-components/OptionsPicker";
+import NumberInput from "./reusable-components/NumberInput";
+import ColorPicker from "./reusable-components/ColorPicker";
+import SpacingControl from "./reusable-components/SpaceControl";
 
 const TextComponentStyles = () => {
   const { state, dispatch } = useEditor();

@@ -26,6 +26,8 @@ export type EditorBtns =
   | "video"
   | "__body"
   | "image"
+  | "divider"
+  | "button"
   | null
   | "3Col";
 
@@ -115,12 +117,12 @@ export const BORDER_STYLES = [
 
 
 export const COLUMN_LAYOUTS = [
-  { label: '2 Columns (50/50)', value: '50-50', columns: ['50%', '50%'] },
-  { label: '2 Columns (67/33)', value: '67-33', columns: ['67%', '33%'] },
-  { label: '2 Columns (33/67)', value: '33-67', columns: ['33%', '67%'] },
-  { label: '3 Columns (33/33/33)', value: '33-33-33', columns: ['33%', '33%', '33%'] },
-  { label: '4 Columns (25/25/25/25)', value: '25-25-25-25', columns: ['25%', '25%', '25%', '25%'] },
-  { label: '4 Columns (33/17/33/17)', value: '33-17-33-17', columns: ['33%', '17%', '33%', '17%'] },
+  { label: '2 Sections (50/50)', value: '50-50', columns: ['50%', '50%'] },
+  { label: '2 Sections (67/33)', value: '67-33', columns: ['67%', '33%'] },
+  { label: '2 Sections (33/67)', value: '33-67', columns: ['33%', '67%'] },
+  { label: '3 Sections (33/33/33)', value: '33-33-33', columns: ['33%', '33%', '33%'] },
+  { label: '4 Sections (25/25/25/25)', value: '25-25-25-25', columns: ['25%', '25%', '25%', '25%'] },
+  { label: '4 Sections (33/17/33/17)', value: '33-17-33-17', columns: ['33%', '17%', '33%', '17%'] },
 ];
 
 

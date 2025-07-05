@@ -1,5 +1,5 @@
-import Recursive from "../root-components/recursive";
-import { EditorElement } from "../../..//providers/email-editor/editor-provider";
+import Recursive from "./recursive";
+import { EditorElement } from "../../../providers/email-editor/editor-provider";
 
 type Props = { state: any };
 

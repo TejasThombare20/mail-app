@@ -89,7 +89,7 @@ const TemplateSelector = ({
             <ErrorState message="Some thing went wrong , while loading templates, please contact administrator" />
           ) : isLoading ? (
             <LoadingState />
-          ) : !isLoading && templates.length == 0 ? (
+          ) : !isLoading && templates?.length == 0 ? (
             <EmptyState
               icon={
                 <Button
@@ -103,8 +103,8 @@ const TemplateSelector = ({
               description="You haven't created any email templates yet. Click on the plus button to create a new template."
             />
           ) : (
-            templates.length > 0 &&
-            templates.map((template, index) => (
+            templates?.length > 0 &&
+            templates?.map((template, index) => (
               <>
                 <SelectItem key={template.id} value={template.id!}>
                   {template.name}

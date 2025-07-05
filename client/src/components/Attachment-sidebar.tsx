@@ -100,7 +100,7 @@ export const AttachmentSidebar = ({
             <ErrorState message="Failed to load Attachments, Please refresh the page" />
           ) : isLoading ? (
             <LoadingState />
-          ) : attachments.length === 0 && !isLoading ? (
+          ) : Array.isArray(attachments) && attachments.length === 0 && !isLoading ? (
             <EmptyState
               icon={<FileText />}
               title="Attachments not found"
@@ -108,7 +108,7 @@ export const AttachmentSidebar = ({
             />
           ) : (
             <div className="space-y-4">
-              {attachments.map((attachment, index) => {
+              { Array.isArray(attachments) &&    attachments.map((attachment, index) => {
                 const isSelected = fields.some((a) => {
                   return a.id === attachment.id;
                 });

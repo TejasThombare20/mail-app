@@ -63,13 +63,13 @@ const Historytable = () => {
       columnVisibility,
       rowSelection,
     },
-    onExpandedChange: setExpanded,
+    onExpandedChange: setExpanded,  
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+    // getPaginationRowModel: getPaginationRowModel(),
+    // getSortedRowModel: getSortedRowModel(),
+    // getFilteredRowModel: getFilteredRowModel(),
     //@ts-ignore
     getSubRows: (row) => row.receiver_emails,
     onColumnVisibilityChange: setColumnVisibility,
@@ -86,7 +86,7 @@ const Historytable = () => {
       const response = await apiHandler.get<getEmailLogsApiResponse[]>(
         "/api/loghistory/"
       );
-      setEmailHistory(response.data!);
+      setEmailHistory(response?.data!);
       setIsLoading(false);
     } catch (error) {
       SetIsError(true);
@@ -119,7 +119,7 @@ const Historytable = () => {
             <ErrorState message="Something went wrong. Please retry or contact administrator" />
           ) : isLoading ? (
             <LoadingState />
-          ) : emailHistory.length === 0 && !isLoading ? (
+          ) : !isLoading && emailHistory?.length === 0   ? (
             <EmptyState
               title="Email history is Empty"
               description="You haven't send any mail yet"
@@ -148,8 +148,8 @@ const Historytable = () => {
                     ))}
                   </TableHeader>
                   <TableBody>
-                    {table.getRowModel().rows?.length ? (
-                      table.getRowModel().rows.map((row) => (
+                    {table.getRowModel()?.rows?.length ? (
+                      table.getRowModel()?.rows?.map((row) => (
                         <React.Fragment key={row.id}>
                           <TableRow
                             data-state={row.getIsExpanded() && "expanded"}

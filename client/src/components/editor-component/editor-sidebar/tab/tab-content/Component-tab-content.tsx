@@ -1,5 +1,5 @@
 import React from "react";
-import { ComponentButton } from "src/components/editor-component/root-components/styles-pannel/helper/ComponentButton";
+import { ComponentButton } from "src/components/editor-component/editor-sidebar/style-pannels/helper/ComponentButton";
 import { COMPONENT_BUTTONS } from "src/lib/constants";
 
 const ComponentTabContent = () => {

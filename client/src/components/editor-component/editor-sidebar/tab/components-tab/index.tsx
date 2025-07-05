@@ -5,6 +5,7 @@ import VideoPlaceholder from "./Video-placeholder";
 import ContactFormComponentPlaceholder from "./Contactform-placeholder";
 import TwoColumnsPlaceholder from "./Two-column-placeholder";
 import LinkPlaceholder from "./Link-placeholder";
+import DividerPlaceholder from "./Divider-placeholder";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../../../ui-component/Accordian";
 import { EditorBtns } from "../../../../../lib/constants";
 
@@ -51,6 +52,12 @@ const ComponentsTab = (props: Props) => {
       Component: <LinkPlaceholder />,
       label: "Link",
       id: "link",
+      group: "elements",
+    },
+    {
+      Component: <DividerPlaceholder />,
+      label: "Divider",
+      id: "divider",
       group: "elements",
     },
   ];

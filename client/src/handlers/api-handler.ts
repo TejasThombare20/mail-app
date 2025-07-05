@@ -2,9 +2,9 @@
   import Cookies from 'js-cookie';
 
   const BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? import.meta.env.VITE_PROD_SERVER
-      : import.meta.env.VITE_LOCAL_SERVER;
+    import.meta.env.MODE === "production"
+      ? import.meta?.env?.VITE_PROD_SERVER
+      : import.meta?.env?.VITE_LOCAL_SERVER;
 
   const DEFAULT_HEADERS = {
     "Content-Type": "application/json",

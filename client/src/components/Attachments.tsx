@@ -103,7 +103,7 @@ const Attachments = (props: Props) => {
         <ErrorState message="failed to load the attachments,Please retry or contact Administrator" />
       ) : isLoading ? (
         <LoadingState />
-      ) :  attachments.length == 0 && !isLoading ? (
+      ) :  !isLoading  && attachments?.length == 0 ? (
         <EmptyState
           description="No attachmnets uploaded yet, Please upload your first Attachment"
           title="No attachment found"
@@ -111,7 +111,7 @@ const Attachments = (props: Props) => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          { attachments.length >=0 &&  attachments.map((attachment) => (
+          { attachments?.length >=0 &&  attachments.map((attachment) => (
             <Card
               key={attachment.id}
               className="overflow-hidden hover:shadow-md transition-shadow"

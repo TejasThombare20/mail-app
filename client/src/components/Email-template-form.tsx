@@ -492,7 +492,7 @@ const EmailTemplateForm = ({ template }: EmailTemplateFormProps) => {
                   )}
                 />
 
-                <div className=" w-full border rounded-md overflow-x-auto relative ">
+                <div className=" w-full border rounded-md overflow-x-auto  relative ">
                   <FormField
                     control={form.control}
                     name="json_data"
@@ -548,7 +548,7 @@ const EmailTemplateForm = ({ template }: EmailTemplateFormProps) => {
                     )}
                   />
 
-                  <FormField
+                  {/* <FormField
                     control={form.control}
                     name="json_data"
                     render={({ field }) => (
@@ -559,7 +559,7 @@ const EmailTemplateForm = ({ template }: EmailTemplateFormProps) => {
                         <FormMessage className="dark:text-red-400" />
                       </FormItem>
                     )}
-                  />
+                  /> */}
                 </div>
               </CardContent>
             </Card>

@@ -1,8 +1,9 @@
 import { Minus, Plus } from "lucide-react";
-import { Button } from "../../ui-component/Button";
-import { Label } from "../../ui-component/Label";
-import { Input } from "../../ui-component/Input";
+
 import { useState } from "react";
+import { Button } from "src/components/ui-component/Button";
+import { Input } from "src/components/ui-component/Input";
+import { Label } from "src/components/ui-component/Label";
 
 // Numeric input with +/- buttons
 interface NumberInputProps {

@@ -68,9 +68,9 @@ const EmailEditorSidebar = ({}: Props) => {
     </Sheet>
 
     {
-      selectedElement && selectedElement?.type 
-        &&!state.editor.previewMode && !state.editor.liveMode && (
-          <div className="fixed top-[97px] right-0 w-80   h-[calc(100vh-97px)] shadow-none p-0 mr-16 bg-background transition-all ">
+      selectedElementFromEditor && selectedElementFromEditor?.id && selectedElementFromEditor?.type 
+        && !state.editor.previewMode && !state.editor.liveMode && (
+          <div className="fixed top-[97px] right-0 w-80   h-[calc(100vh-97px)] shadow-none p-0 mr-16 bg-gray-950 transition-all ">
         <StyleComponentLoader/>
           </div>
       )

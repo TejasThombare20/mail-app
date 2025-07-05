@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useEditor } from "src/providers/email-editor/editor-provider";
-import TextComponentStyles from "../../root-components/styles-pannel/Text-Component";
+import TextComponentStyles from "../style-pannels/Text-Component-style-pannel";
+import DividerComponentStyles from "../style-pannels/Divider-Component-style-pannel";
+import ButtonComponentStyles from "../style-pannels/Button-Component-style-pannel";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "src/components/ui-component/Sheet";
-import ContentComponentStyles from "../../root-components/styles-pannel/Content-Component";
+import ContentComponentStyles from "../style-pannels/Content-Component-style-pannel";
 
 
 const StyleComponentLoader = () => {
@@ -35,8 +37,12 @@ const StyleComponentLoader = () => {
     switch (selectedElement.type) {
       case "text":
         return <TextComponentStyles />;
-        case 'container':
-          return <ContentComponentStyles />;
+      case 'container':
+        return <ContentComponentStyles />;
+      case 'divider':
+        return <DividerComponentStyles />;
+      case 'button':
+        return <ButtonComponentStyles />;
       //   case 'container':
       //   case '2Col':
       //   case '__body':
@@ -55,8 +61,8 @@ const StyleComponentLoader = () => {
         onInteractOutside={(e) => e.preventDefault()}
         showX={true}
         side="right" 
-        className="mt-[97px] shadow-lg p-0 border-l flex flex-col h-[calc(100vh-97px)] "
-      >
+        className="mt-[97px] shadow-lg p-0 border-l flex flex-col h-[calc(100vh-97px)] bg-gray-950"
+      > 
         <SheetHeader className="p-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-sm font-medium">

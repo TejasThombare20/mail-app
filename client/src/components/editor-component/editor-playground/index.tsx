@@ -3,7 +3,7 @@ import { EyeOff } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useEditor } from "../../../providers/email-editor/editor-provider";
 import { Button } from "../../ui-component/Button";
-import RenderedTemplate from "../rendered-template/rendered-template";
+import RenderedTemplate from "./rendered-template";
 import ReactDOMServer from "react-dom/server";
 
 type Props = { liveMode?: boolean };
@@ -21,6 +21,7 @@ const EmailEditorGround = ({ liveMode }: Props) => {
   }, [liveMode]);
 
 
+  const editorRef = useRef<HTMLDivElement>(null);
   const handleClick = () => {
     dispatch({
       type: "CHANGE_CLICKED_ELEMENT",
@@ -31,19 +32,22 @@ const EmailEditorGround = ({ liveMode }: Props) => {
   const handleUnpreview = () => {
     dispatch({ type: "TOGGLE_PREVIEW_MODE" });
     dispatch({ type: "TOGGLE_LIVE_MODE" });
+    const html = editorRef.current?.innerHTML;
+    console.log("html", html)
   };
 
-  const editorRef = useRef<HTMLDivElement>(null);
+
 
   const getHTML = () => {
+    console.log("Hello")
     const html = editorRef.current?.innerHTML;
-    console.log(html);
+    console.log("html", html);
   };
 
   return (
     <div
       className={clsx(
-        "use-automation-zoom-in h-full overflow-scroll mr-[385px] bg-background transition-all rounded-md ",
+        "use-automation-zoom-in h-full overflow-scroll mr-[385px] bg-white transition-all rounded-md ",
         {
           "!p-0 !mr-0":
             state.editor.previewMode === true || state.editor.liveMode === true,
@@ -65,7 +69,7 @@ const EmailEditorGround = ({ liveMode }: Props) => {
             <EyeOff />
           </Button>
 
-          <Button onClick={getHTML}>getHTML </Button>
+          <Button className="text-black" onClick={getHTML}>getHTML </Button>
         </>
       )}
       <div className="w-full h-full"  ref={editorRef} id="email-editor">

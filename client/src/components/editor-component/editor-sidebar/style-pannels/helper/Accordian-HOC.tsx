@@ -1,7 +1,5 @@
 import { AccordionContent, AccordionItem, AccordionTrigger } from "src/components/ui-component/Accordian";
 
-
-
 interface StyleSectionProps {
     value: string;
     title: string;

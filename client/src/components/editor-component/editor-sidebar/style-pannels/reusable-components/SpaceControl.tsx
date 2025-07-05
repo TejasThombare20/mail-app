@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Label } from "../../ui-component/Label";
 import AdvancedToggle from "./AdvancedToggle";
 import NumberInput from "./NumberInput";
+import { Label } from "src/components/ui-component/Label";
 
 interface SpacingControlProps {
     allSidesId: string;

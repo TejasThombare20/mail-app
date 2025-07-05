@@ -4,15 +4,16 @@ import { Accordion } from "src/components/ui-component/Accordian";
 import { EditorElement, useEditor } from "src/providers/email-editor/editor-provider";
 import AccordianHOC from "./helper/Accordian-HOC";
 import { BORDER_STYLES, COLUMN_LAYOUTS } from "src/lib/constants";
-import NumberInput from "../../editor-style-component/NumberInput";
-import ColorPicker from "../../editor-style-component/ColorPicker";
+
 import { Label } from "src/components/ui-component/Label";
 import { Tabs, TabsList, TabsTrigger } from "src/components/ui-component/Tabs";
 import { Button } from "src/components/ui-component/Button";
 import { Plus, Trash2, Upload } from "lucide-react";
-import OptionsPicker from "../../editor-style-component/OptionsPicker";
 import { Input } from "src/components/ui-component/Input";
 import { Switch } from "src/components/ui-component/Switch";
+import OptionsPicker from "./reusable-components/OptionsPicker";
+import NumberInput from "./reusable-components/NumberInput";
+import ColorPicker from "./reusable-components/ColorPicker";
 
 const ContentComponentStyles = () => {
   const { dispatch, state } = useEditor();
@@ -20,9 +21,43 @@ const ContentComponentStyles = () => {
 
   const element = state.editor.selectedElement;
 
-  // Extract current column information from element
-  const columnCount = Array.isArray(element.content)
-    ? element.content.length
+  // Helper function to find parent element by ID
+  const findParentElement = (elements: EditorElement[], targetId: string): EditorElement | null => {
+    for (const el of elements) {
+      if (Array.isArray(el.content)) {
+        // Check if any direct child has the target ID
+        const hasDirectChild = el.content.some(child => child.id === targetId);
+        if (hasDirectChild) {
+          return el;
+        }
+        // Recursively search in nested content
+        const parent = findParentElement(el.content, targetId);
+        if (parent) return parent;
+      }
+    }
+    return null;
+  };
+
+  // Helper function to check if element is a row section (child row)
+  const isRowSection = (element: EditorElement): boolean => {
+    return element.name === "row-section" || element.isChildRow === true;
+  };
+
+  // Get the target element for partitioning (parent row if current is row section)
+  const getTargetElementForPartitioning = (): EditorElement => {
+    if (isRowSection(element)) {
+      // If current element is a row section, find its parent and use it for partitioning
+      const parentElement = findParentElement(state.editor.elements, element.id);
+      return parentElement || element;
+    }
+    return element;
+  };
+
+  const targetElement = getTargetElementForPartitioning();
+
+  // Extract current column information from target element
+  const columnCount = Array.isArray(targetElement.content)
+    ? targetElement.content.length
     : 0;
 
   // Get the active column index (0-based)
@@ -36,36 +71,42 @@ const ContentComponentStyles = () => {
   }) => {
     const { columns } = layout;
 
-    // Collect all existing content
-    let allExistingContent : EditorElement[] | {
-      href?: string;
-      innerText?: string;
-      src?: string;
-  } = element.content;
-    // if (Array.isArray(element.content) && element.content.length > 0) {
-    //   // Gather all content from all existing columns
-    //   allExistingContent = element.content.flatMap(col => 
-    //     Array.isArray(col.content) ? col.content : []
-    //   );
-    // } 
-    console.log("element content",element.content);
-    console.log("allExistingContent",allExistingContent);
+    // Use target element (parent row if current is row section)
+    const elementToUpdate = targetElement;
 
-    // Create content array with appropriate column widths
-    const updatedContent : EditorElement[] = columns.map((width: string, index: number) => {
+    // Collect all existing content from current row
+    let allExistingContent: EditorElement[] = [];
+    if (Array.isArray(elementToUpdate.content)) {
+      // If already has sections, collect content from all sections
+      if (elementToUpdate.content.some(child => child.name === "row-section")) {
+        allExistingContent = elementToUpdate.content.flatMap(section => 
+          Array.isArray(section.content) ? section.content : []
+        );
+      } else {
+        // If normal row, keep existing content
+        allExistingContent = elementToUpdate.content;
+      }
+    }
+
+    // Create horizontal sections (side by side) with width proportions
+    const updatedContent: EditorElement[] = columns.map((width: string, index: number) => {
       return {
         id: v4(),
         type: "container",
-        name  : 'column',
+        name: "row-section",
         styles: {
-          width: width,
-          // padding: "8px",
-          height: "100%", // Ensure column takes full height
+          width: width, // Use width proportions for horizontal division
+          height: "100%", // Full height of parent row
+          minHeight: "200px", // Minimum height for usability
+          padding: "8px",
           boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          // Remove borderRight - we'll use visual separators instead
         },
-        // Put all existing content in the first column, leave others empty
+        // Put all existing content in the first section, leave others empty
         content: index === 0 ? allExistingContent : [],
-        isDraggable: false, // Disable dragging for column containers
+        isChildRow: true, // Mark as child row to prevent further division
       };
     });
 
@@ -73,64 +114,28 @@ const ContentComponentStyles = () => {
       type: "UPDATE_ELEMENT", 
       payload: {
         elementDetails: {
-          ...element,
+          ...elementToUpdate,
           content: updatedContent,
           styles: {
-            ...element.styles,
+            ...elementToUpdate.styles,
             display: "flex",
-            flexDirection: "row",
-            flexWrap: "wrap",
+            flexDirection: "row", // Horizontal layout for side-by-side sections
+            width: "100%",
+            minHeight: "200px", // Minimum height for the row
+            height: "auto", // Allow height to grow with content
           },
         },
       },
     });
+
+    // Update selected element to first section if current element was a row section
+    if (isRowSection(element) && updatedContent.length > 0) {
+      dispatch({
+        type: "CHANGE_CLICKED_ELEMENT",
+        payload: { elementDetails: updatedContent[0] },
+      });
+    }
   };
-
-  // const handleLayoutChange = (layout: {
-  //   label: string;
-  //   value: string;
-  //   columns: string[];
-  // }) => {
-  //   const { columns } = layout;
-
-  //   // Create content array with appropriate column widths
-  //   const updatedContent : EditorElement  = columns.map((width: string, index: number) => {
-  //     // Preserve existing content if available
-  //     const existingColumn =
-  //       Array.isArray(element.content) && element.content[index];
-
-   
-  //     return {
-  //       id: existingColumn?.id || `column-${Date.now()}-${index}`,
-  //       name: `Column ${index + 1}`,
-  //       type: "container",
-  //       styles: {
-  //         width: width,
-  //         padding: "8px",
-  //         ...(existingColumn?.styles || {}),
-  //       },
-  //       content: existingColumn?.content || [],
-  //     };
-  //   });
-
-  //   if (updatedContent && Array.isArray(updatedContent)) {
-  //     dispatch({
-  //       type: "UPDATE_ELEMENT", 
-  //       payload: {
-  //         elementDetails: {
-  //           ...element,
-  //           content: updatedContent,
-  //           styles: {
-  //             ...element.styles,
-  //             display: "flex",
-  //             flexDirection: "row",
-  //             flexWrap: "wrap",
-  //           },
-  //         },
-  //       },
-  //     });
-  //   }
-  // };
 
   const handleStyleChange = (e: {
     target: {
@@ -178,60 +183,20 @@ const ContentComponentStyles = () => {
     }
   };
 
-  // const handleDeleteColumn = (index: number) => {
-
-  //   if(!Array.isArray(element.content)) return ;
-
-  //   if (Array.isArray(element.content) && element.content?.length <= 1) return;
-
-    
-
-  //   const updatedContent =  element.content.filter(
-  //     (_: any, i: number) => i !== index
-  //   );
-
-  //   // Recalculate widths to redistribute the space
-  //   const equalWidth = Math.floor(100 / updatedContent.length);
-  //   updatedContent.forEach((col: any, i: number) => {
-  //     col.styles.width =
-  //       i === updatedContent.length - 1
-  //         ? `${100 - equalWidth * (updatedContent.length - 1)}%`
-  //         : `${equalWidth}%`;
-  //   });
-
-  //   dispatch({
-  //     type: "UPDATE_ELEMENT",
-  //     payload: {
-  //       elementDetails: {
-  //         ...element,
-  //         content: updatedContent,
-  //       },
-  //     },
-  //   });
-
-  //   // Update active tab if needed
-  //   if (index === activeColumnIndex) {
-  //     setActiveTab("column-1");
-  //   } else if (index < activeColumnIndex) {
-  //     setActiveTab(`column-${activeColumnIndex}`);
-  //   }
-  // };
-
-
-  const handleDeleteColumn = (index: number) => {
+  const handleDeleteSection = (index: number) => {
     if(!Array.isArray(element.content)) return;
 
     if (Array.isArray(element.content) && element.content?.length <= 1) return;
     
-    // Get content from the column being deleted
+    // Get content from the section being deleted
     const contentToPreserve = element.content[index].content || [];
     
-    // Remove the column
+    // Remove the section
     const updatedContent = element.content.filter(
       (_: any, i: number) => i !== index
     );
 
-    // If there's content to preserve, add it to the first column
+    // If there's content to preserve, add it to the first section
     if ( Array.isArray(contentToPreserve) && contentToPreserve.length > 0 && Array.isArray(updatedContent) &&  updatedContent.length > 0 && Array.isArray(updatedContent[0]?.content)) {
       updatedContent[0].content = [
         ...(updatedContent[0]?.content || []),
@@ -244,11 +209,14 @@ const ContentComponentStyles = () => {
     const equalWidth = Math.floor(totalWidth / updatedContent.length);
     const remainder = totalWidth - (equalWidth * updatedContent.length);
     
-    updatedContent.forEach((col: any, i: number) => {
-      // Add remainder to last column to ensure total equals 100%
-      col.styles.width = i === updatedContent.length - 1
+    updatedContent.forEach((section: any, i: number) => {
+      // Add remainder to last section to ensure total equals 100%
+      section.styles.width = i === updatedContent.length - 1
         ? `${equalWidth + remainder}%`
         : `${equalWidth}%`;
+      
+      // Update border for last section
+      section.styles.borderRight = i < updatedContent.length - 1 ? "1px solid #e5e7eb" : "none";
     });
 
     dispatch({
@@ -269,76 +237,47 @@ const ContentComponentStyles = () => {
     }
   };
 
-  // const handleInsertColumn = (index: number) => {
-  //   if (!Array.isArray(element.content)) return 
-  //   const updatedContent = [...element.content];
-
-  //   // Redistribute widths
-  //   const equalWidth = Math.floor(100 / (updatedContent.length + 1));
-
-  //   updatedContent.forEach((col: any, i: number) => {
-  //     col.styles.width = `${equalWidth}%`;
-  //   });
-
-  //   // Create new column with equal width
-  //   const newColumn = {
-  //     id: `column-${Date.now()}`,
-  //     name: `Column ${updatedContent.length + 1}`,
-  //     type: "container",
-  //     styles: {
-  //       width: `${equalWidth}%`,
-  //       padding: "8px",
-  //     },
-  //     content: [],
-  //   };
-
-  //   // Insert at the specified position
-  //   // updatedContent.splice(index + 1, 0, newColumn);
-
-  //   dispatch({
-  //     type: "UPDATE_ELEMENT",
-  //     payload: {
-  //       elementDetails: {
-  //         ...element,
-  //         content: updatedContent,
-  //       },
-  //     },
-  //   });
-
-  //   // Select the newly inserted column
-  //   setActiveTab(`column-${index + 2}`);
-  // };
-
-  const handleInsertColumn = (index: number) => {
+  const handleInsertSection = (index: number) => {
     if (!Array.isArray(element.content)) return;
     const updatedContent = [...element.content];
     
     // Calculate new width distribution proportionally
-    const totalColumns = updatedContent.length + 1;
-    const equalWidth = Math.floor(100 / totalColumns);
-    const remainder = 100 - (equalWidth * totalColumns);
+    const totalSections = updatedContent.length + 1;
+    const equalWidth = Math.floor(100 / totalSections);
+    const remainder = 100 - (equalWidth * totalSections);
     
-    // Update widths of existing columns
-    updatedContent.forEach((col: any) => {
-      col.styles.width = `${equalWidth}%`;
+    // Update widths of existing sections
+    updatedContent.forEach((section: any) => {
+      section.styles.width = `${equalWidth}%`;
+      section.styles.borderRight = "1px solid #e5e7eb";
     });
 
-    // Create new column
-    const newColumn : EditorElement = {
+    // Create new section
+    const newSection : EditorElement = {
       id: v4(),
       type: "container",
-      name  :  "column",
+      name: "row-section",
       styles: {
-        width: `${equalWidth + remainder}%`, 
+        width: `${equalWidth + remainder}%`,
+        height: "100%", 
+        minHeight: "200px",
         padding: "8px",
-        height: "100%",
         boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        borderRight: "none", // Last section has no border
       },
       content: [],
+      isChildRow: true,
     };
 
     // Insert at the specified position
-    updatedContent.splice(index + 1, 0, newColumn);
+    updatedContent.splice(index + 1, 0, newSection);
+
+    // Update border for the new last section
+    updatedContent.forEach((section: any, i: number) => {
+      section.styles.borderRight = i < updatedContent.length - 1 ? "1px solid #e5e7eb" : "none";
+    });
 
     dispatch({
       type: "UPDATE_ELEMENT",
@@ -350,7 +289,7 @@ const ContentComponentStyles = () => {
       },
     });
 
-    // Select the newly inserted column
+    // Select the newly inserted section
     setActiveTab(`column-${index + 2}`);
   };
 
@@ -414,8 +353,8 @@ const ContentComponentStyles = () => {
           "responsive-design",
         ]}
       >
-        {/* Column Layout Section */}
-        <AccordianHOC value="columns" title="Columns">
+        {/* Row Division Section */}
+        <AccordianHOC value="columns" title="Row Sections">
           <div className="grid grid-cols-2 gap-2">
             {COLUMN_LAYOUTS.map((layout) => (
               <div
@@ -442,8 +381,8 @@ const ContentComponentStyles = () => {
           </div>
         </AccordianHOC>
 
-        {/* Column Properties Section */}
-        <AccordianHOC value="column-properties" title="Column Properties">
+        {/* Section Properties */}
+        <AccordianHOC value="column-properties" title="Section Properties">
           <div className="space-y-4">
             {columnCount > 0 ? (
               <>
@@ -468,19 +407,19 @@ const ContentComponentStyles = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteColumn(activeColumnIndex)}
+                                            onClick={() => handleDeleteSection(activeColumnIndex)}
                     disabled={columnCount <= 1}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete Column
+                                          Delete Section
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleInsertColumn(activeColumnIndex)}
+                                            onClick={() => handleInsertSection(activeColumnIndex)}
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    Insert Column
+                    Insert Section
                   </Button>
                 </div>
 
@@ -572,7 +511,7 @@ const ContentComponentStyles = () => {
             ) : (
               <div className="flex items-center justify-center h-20 border rounded border-dashed">
                 <p className="text-sm text-muted-foreground">
-                  No columns available
+                  No sections available
                 </p>
               </div>
             )}

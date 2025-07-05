@@ -24,38 +24,11 @@ const EditorNavigation = ({
 }: Props) => {
   const { state, dispatch } = useEditor();
 
-//   useEffect(() => {
-//     dispatch({
-//       type: "SET_FUNNELPAGE_ID",
-//       payload: { funnelPageId: funnelPageDetails.id },
-//     });
-//   }, [funnelPageDetails]);
 
   const handleOnBlurTitleChange: FocusEventHandler<HTMLInputElement> = async (
     event
   ) => {
-    // if (event.target.value === funnelPageDetails.name) return;
-    // if (event.target.value) {
-    //   await upsertFunnelPage(
-    //     subaccountId,
-    //     {
-    //       id: funnelPageDetails.id,
-    //       name: event.target.value,
-    //       order: funnelPageDetails.order,
-    //     },
-    //     funnelId
-    //   );
 
-    //   toast("Success", {
-    //     description: "Saved Funnel Page title",
-    //   });
-    //   router.refresh();
-    // } else {
-    //   toast("Oppse!", {
-    //     description: "You need to have a title!",
-    //   });
-    //   event.target.value = funnelPageDetails.name;
-    // }
   };
 
   const handlePreviewClick = () => {
@@ -73,28 +46,6 @@ const EditorNavigation = ({
 
   const handleOnSave = async () => {
     const content = JSON.stringify(state.editor.elements);
-    try {
-        //   const response = await upsertFunnelPage(
-        //     subaccountId,
-        //     {
-        //       ...funnelPageDetails,
-        //       content,
-        //     },
-        //     funnelId
-        //   );
-    //   await saveActivityLogsNotification({
-    //     agencyId: undefined,
-    //     description: `Updated a funnel page | ${response?.name}`,
-    //     subaccountId: subaccountId,
-    //   });
-    //   toast("Success", {
-    //     description: "Saved Editor",
-    //   });
-    } catch (error) {
-    //   toast("Oppse!", {
-    //     description: "Could not save editor",
-    //   });
-    }
   };
 
   return (
@@ -106,12 +57,9 @@ const EditorNavigation = ({
         )}
       >
         <aside className="flex items-center gap-4 max-w-[260px] w-[300px]">
-          {/* <Link to={`/subaccount/${subaccountId}/funnels/${funnelId}`}> */}
             <ArrowLeftCircle />
-          {/* </Link> */}
           <div className="flex flex-col w-full ">
             <Input
-            //   defaultValue={funnelPageDetails.name}
               className="border-none h-5 m-0 p-0 text-lg"
               onBlur={handleOnBlurTitleChange}
             />

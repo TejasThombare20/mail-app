@@ -1,5 +1,6 @@
-import { Label } from "../../ui-component/Label";
-import { Switch } from "../../ui-component/Switch";
+import { Label } from "src/components/ui-component/Label";
+import { Switch } from "src/components/ui-component/Switch";
+
 
 
 interface AdvancedToggleProps {

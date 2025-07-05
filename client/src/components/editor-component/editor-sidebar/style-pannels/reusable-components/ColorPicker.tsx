@@ -1,8 +1,8 @@
 import { ChangeEvent } from "react";
-import { Button } from "../../ui-component/Button";
-import { Input } from "../../ui-component/Input";
-import { Label } from "../../ui-component/Label";
-import { Popover, PopoverContent, PopoverTrigger } from "../../ui-component/Popover";
+import { Button } from "src/components/ui-component/Button";
+import { Label } from "src/components/ui-component/Label";
+import { Input } from "src/components/ui-component/Input";
+import { Popover, PopoverContent, PopoverTrigger } from "src/components/ui-component/Popover";
 
 
 interface ColorPickerProps {
