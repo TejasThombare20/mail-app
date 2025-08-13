@@ -16,7 +16,38 @@ export async function checkMXRecord(email: string): Promise<boolean> {
   });
 }
 
-export  function createEmailBody(
+/**
+ * Extracts receiver name from email address
+ * @param email - Email address
+ * @returns Extracted name or fallback
+ */
+export function extractReceiverNameFromEmail(email: string): string {
+  if (!email || typeof email !== 'string') {
+    return 'Dude';
+  }
+  
+  try {
+    // Get the part before @
+    const localPart = email.split('@')[0];
+    
+    let name = '';
+    // If it contains a dot, return the part before the dot
+    if (localPart.includes('.')) {
+      name = localPart.split('.')[0];
+    } else {
+      // Otherwise return the whole local part
+      name = localPart;
+    }
+    
+    // Capitalize the first letter
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  } catch (error) {
+    // Return fallback if any error occurs
+    return 'Dude';
+  }
+}
+
+export function createEmailBody(
   recipient: string,
   subject: string,
   personalizedHtml: string,
@@ -50,10 +81,6 @@ export  function createEmailBody(
   return emailBody;
 }
 
-
-
-
-
 /**
  * Converts Tailwind-based HTML into inline-styled email-safe HTML for Gmail API
  * @param rawHtml - Tailwind HTML string from the editor
@@ -64,9 +91,6 @@ const tailwindBaseStyles = `@import url('https://cdn.jsdelivr.net/npm/tailwindcs
 
 export function convertTailwindHtmlToSendableEmail(rawHtml: string): string {
   // 1. Wrap raw HTML with full email HTML structure
-
-  
-
 
   const fullHtml = `
     <!DOCTYPE html>

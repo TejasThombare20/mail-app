@@ -9,11 +9,17 @@ import {
   checkMXRecord,
   convertTailwindHtmlToSendableEmail,
   createEmailBody,
+  extractReceiverNameFromEmail,
   isValidEmail,
 } from "../utils/validate-email";
 import { AttachmentRepository } from "../repository/attachment.repository";
 import { Attachment, EmailAttachment } from "../types/attachment.types";
 import { AttachmentService } from "./attachment.service";
+import fs from 'fs';
+import path from 'path';
+
+// Helper function to add delay between emails
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export class EmailService {
   private oauth2Client: OAuth2Client;
@@ -101,6 +107,7 @@ export class EmailService {
       throw new Error("Template not found");
     }
 
+    // Load attachments from template
     let attachements: (EmailAttachment | null)[] = [];
     if (template.attachments?.length > 0) {
       const attachmentsData = await this.attahcmentRepository.findByIds(
@@ -123,6 +130,54 @@ export class EmailService {
       );
 
       attachements = bufferedAttachmentsData;
+    }
+
+    // For local environment, add the local PDF attachment
+    try {
+      // Try multiple possible paths
+      const possiblePaths = [
+        path.join(process.cwd(), 'src', 'media', 'Tejas_Thombare_IIIT_Gwalior.pdf'),
+        path.join(process.cwd(), '..', 'server', 'src', 'media', 'Tejas_Thombare_IIIT_Gwalior.pdf'),
+        '/Users/tejas/Documents/web-dev/mailGenie/mail-app/server/src/media/Tejas_Thombare_IIIT_Gwalior.pdf',
+        path.resolve(__dirname, '..', 'media', 'Tejas_Thombare_IIIT_Gwalior.pdf')
+      ];
+      
+      let pdfPath: string | null = null;
+      let fileFound = false;
+      
+      // Try each path until we find one that works
+      for (const testPath of possiblePaths) {
+        console.log('Trying path:', testPath);
+        try {
+          fs.accessSync(testPath, fs.constants.R_OK);
+          pdfPath = testPath;
+          fileFound = true;
+          console.log('Found PDF at:', pdfPath);
+          break;
+        } catch (err) {
+          console.log('Path not accessible:', testPath);
+        }
+      }
+      
+      if (!fileFound || !pdfPath) {
+        throw new Error('Could not find PDF file in any of the expected locations');
+      }
+      
+      const pdfContent = fs.readFileSync(pdfPath);
+      const base64Content = pdfContent.toString('base64');
+      
+      const localPdfAttachment: EmailAttachment = {
+        filename: 'Tejas_Thombare_IIIT_Gwalior.pdf',
+        content: base64Content,
+        mimeType: 'application/pdf',
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        file_url: `file://${pdfPath}`
+      };
+      
+      attachements.push(localPdfAttachment);
+      console.log('PDF attachment added successfully');
+    } catch (error) {
+      console.error('Failed to load local PDF attachment:', error);
     }
 
     // Create history record with initial status
@@ -150,6 +205,9 @@ export class EmailService {
         continue;
       }
 
+      // Extract receiver name from email
+      const receiverName = extractReceiverNameFromEmail(recipient);
+
       // Replace global variables
       global_variables.forEach(({ key, value }) => {
         personalizedHtml = personalizedHtml.replace(
@@ -158,18 +216,25 @@ export class EmailService {
         );
       });
 
-      local_variables.forEach(({ description, id, key }) => {
-        personalizedHtml = personalizedHtml.replace(
-          new RegExp(`{{${key}}}`, "g"),
-          String(description)
-        );
-      });
+      // local_variables.forEach(({ description, id, key }) => {
+      //   personalizedHtml = personalizedHtml.replace(
+      //     new RegExp(`{{${key}}}`, "g"),
+      //     String(description)
+      //   );
+      // });
+      // Note: Local variables replacement is commented out as we're now using the receiver_name extraction instead
+
+      // Replace {{receiver_name}} placeholder with extracted name
+      personalizedHtml = personalizedHtml.replace(
+        new RegExp(`{{receiver_name}}`, "g"),
+        receiverName
+      );
 
       const HTML = `
       <div><div class="relative p-4 transition-all group h-full overflow-scroll " draggable="false"><div class="items-center border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80 absolute -top-[23px] -left-[1px] rounded-none rounded-t-lg hidden">Body</div><div class="p-[2px] w-full m-[5px] relative text-[16px] transition-all !border-blue-500 !border-solid" style="color: rgb(217, 32, 211); background-position: center center; object-fit: cover; background-repeat: no-repeat; text-align: left; opacity: 1; font-family: &quot;Courier New&quot;, monospace; font-size: 50px; line-height: 2; padding: 10px; font-weight: bold;"><span contenteditable="false">Welcome from client side ....&nbsp;</span></div></div></div>
       `;
 
-      const testEmail =   convertTailwindHtmlToSendableEmail(HTML);
+      const testEmail = convertTailwindHtmlToSendableEmail(HTML);
 
       const emailBody = createEmailBody(
         recipient,
@@ -238,6 +303,11 @@ export class EmailService {
         } catch (dbError) {
           console.error(`DB update failed for ${recipient}:`, dbError);
         }
+      }
+      
+      // Add a delay between sending emails (2.5 seconds)
+      if (recipients.indexOf(recipient) < recipients.length - 1) {
+        await delay(2500);
       }
     }
     // Update overall history status

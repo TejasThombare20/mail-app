@@ -25,5 +25,4 @@ export const connectDB = async (): Promise<void> => {
   }
 };
 
-// Export the pool for queries
 export default pool;
