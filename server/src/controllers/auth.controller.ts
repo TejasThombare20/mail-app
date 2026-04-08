@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
+import { UserRepository } from "../repository/user.repository";
+import { AuthRequest } from "../middleware/auth.middleware";
 import logger from "../utils/logger";
 
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private userRepository?: UserRepository) {}
 
   getAuthUrl = async(req: Request, res: Response): Promise<void> => {
     try {
@@ -45,6 +47,45 @@ export class AuthController {
     } catch (error) {
       logger.error("Auth error:", error);
       res.status(500).json({ error: "Authentication failed" });
+    }
+  };
+
+  logout = async (_req: Request, res: Response): Promise<void> => {
+    try {
+      res.clearCookie("auth_token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
+      res.status(200).json({ message: "Logged out successfully", success: true });
+    } catch (error) {
+      logger.error("Logout error:", error);
+      res.status(500).json({ message: "Internal Server Error", success: false });
+    }
+  };
+
+  getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId || !this.userRepository) {
+        res.status(401).json({ message: "Not authenticated", success: false });
+        return;
+      }
+
+      const user = await this.userRepository.findUserById(userId);
+      if (!user) {
+        res.status(404).json({ message: "User not found", success: false });
+        return;
+      }
+
+      res.status(200).json({
+        data: { id: user.id, name: user.name, email: user.email, picture: user.picture },
+        message: "User profile fetched successfully",
+        success: true,
+      });
+    } catch (error) {
+      logger.error("Error fetching user profile", { error });
+      res.status(500).json({ message: "Internal Server Error", success: false });
     }
   };
 

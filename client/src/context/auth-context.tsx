@@ -1,41 +1,61 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import Cookies from "js-cookie";
+import apiHandler from '../handlers/api-handler';
 import { User } from '../types/auth-types';
-
 
 interface AuthContextType {
   user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   login: (userData: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
-// Create Context
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// AuthProvider Component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const checkAuth = async () => {
+    try {
+      const res = await apiHandler.get<User>('/api/auth/me');
+      if (res.success && res.data) {
+        setUser(res.data);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   const login = (userData: User) => {
     setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiHandler.post('/api/auth/logout');
+    } catch {
+      // Even if the server call fails, clear local state
+    }
     setUser(null);
-    localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
-  
 };
-
-
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -45,16 +65,34 @@ export const useAuth = () => {
   return context;
 };
 
-interface PrivateRouteProps {
-    children: React.ReactNode;
+// Redirects to /login if not authenticated
+export const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
-const PrivateRoute = ({ children }: PrivateRouteProps) => {
-    // const { user } = useAuth();
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
 
-    const token = Cookies.get("auth_token");
+// Redirects to /dashboard if already authenticated
+export const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-    return token ? <>{children}</> : <Navigate to="/login"/>;
-  };
-  
-  export default PrivateRoute;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+};
+
+export default PrivateRoute;

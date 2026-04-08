@@ -157,6 +157,93 @@ export class HistoryRepository {
     }
   }
 
+  // ── Dashboard stats ──────────────────────────────────────────────
+
+  async getDashboardStats(user_id: string): Promise<{
+    summary: {
+      total_sessions: number;
+      total_emails_sent: number;
+      total_emails_failed: number;
+      completed_sessions: number;
+      failed_sessions: number;
+      in_progress_sessions: number;
+    };
+    sessions: Array<{
+      id: string;
+      subject: string;
+      template_name: string | null;
+      status: string;
+      total_emails: number;
+      sent_count: number;
+      failed_count: number;
+      started_at: Date;
+      completed_at: Date | null;
+      created_at: Date;
+      duration_seconds: number | null;
+      recipient_companies: string[];
+    }>;
+  } | null> {
+    try {
+      // Summary stats
+      const summaryResult = await this.pool.query(
+        `SELECT
+           COUNT(*)::int AS total_sessions,
+           COALESCE(SUM(sent_count), 0)::int AS total_emails_sent,
+           COALESCE(SUM(failed_count), 0)::int AS total_emails_failed,
+           COUNT(*) FILTER (WHERE status = 'completed')::int AS completed_sessions,
+           COUNT(*) FILTER (WHERE status = 'failed')::int AS failed_sessions,
+           COUNT(*) FILTER (WHERE status = 'in_progress')::int AS in_progress_sessions
+         FROM email_sessions
+         WHERE user_id = $1`,
+        [user_id]
+      );
+
+      // Per-session details with template name and recipient companies
+      const sessionsResult = await this.pool.query(
+        `SELECT
+           es.id,
+           es.subject,
+           t.name AS template_name,
+           es.status,
+           es.total_emails,
+           es.sent_count,
+           es.failed_count,
+           es.started_at,
+           es.completed_at,
+           es.created_at,
+           CASE
+             WHEN es.completed_at IS NOT NULL AND es.started_at IS NOT NULL
+             THEN EXTRACT(EPOCH FROM (es.completed_at - es.started_at))::int
+             ELSE NULL
+           END AS duration_seconds,
+           COALESCE(
+             ARRAY(
+               SELECT DISTINCT ser.company_name
+               FROM email_logs el
+               JOIN sent_email_records ser ON ser.email = el.recipient_email
+               WHERE el.session_id = es.id
+                 AND ser.company_name IS NOT NULL
+                 AND ser.company_name != ''
+             ),
+             '{}'
+           ) AS recipient_companies
+         FROM email_sessions es
+         LEFT JOIN templates t ON es.template_id = t.id
+         WHERE es.user_id = $1
+         ORDER BY es.started_at DESC`,
+        [user_id]
+      );
+
+      return {
+        summary: summaryResult.rows[0],
+        sessions: sessionsResult.rows,
+      };
+    } catch (error) {
+      logger.error("Error fetching dashboard stats", { error });
+      return null;
+    }
+  }
+
   // ── Legacy compat methods (kept for any existing callers) ────────
 
   async create(data: {

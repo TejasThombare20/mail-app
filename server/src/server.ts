@@ -26,6 +26,10 @@ import { createEmailRouter } from './routes/email.routes';
 import { LogHistoryService } from './services/LogHistory.service';
 import { LogHistoryController } from './controllers/logHistory.controller';
 import { createLogHistoryRouter } from './routes/logHistory.routes';
+import { SentEmailRecordsRepository } from './repository/sentEmailRecords.repository';
+import { SentEmailRecordsService } from './services/sentEmailRecords.service';
+import { SentEmailRecordsController } from './controllers/sentEmailRecords.controller';
+import { createSentEmailRecordsRouter } from './routes/sentEmailRecords.routes';
 
 dotenv.config();
 
@@ -56,19 +60,22 @@ const firebaseStorage = new MediaStorage();
  const historyRepository = new HistoryRepository(pool)
  const attachmentsRepository = new AttachmentRepository(pool)
  const logHistoryRepository = new HistoryRepository(pool)
+ const sentEmailRecordsRepository = new SentEmailRecordsRepository(pool)
 
 const authService = new AuthService(userRepository, tokenRepository);
 const templateService = new TemplateService(templateRepository,attachmentsRepository);
 const attachmentService = new AttachmentService(attachmentsRepository ,firebaseStorage);
 const emailService = new EmailService(tokenRepository, templateRepository,historyRepository,attachmentsRepository,attachmentService );
 const logHistoryService = new LogHistoryService(logHistoryRepository)
+const sentEmailRecordsService = new SentEmailRecordsService(sentEmailRecordsRepository)
 
 
-const authController = new AuthController(authService);
+const authController = new AuthController(authService, userRepository);
 const templateController = new TemplateController(templateService, emailService, attachmentService);
 const attachmentController = new AttachmentController(attachmentService);
 const emailController = new EmailController(emailService)
 const logHistoryController = new LogHistoryController(logHistoryService)
+const sentEmailRecordsController = new SentEmailRecordsController(sentEmailRecordsService)
 
 
 
@@ -82,6 +89,7 @@ app.use('/api/templates', createTemplateRouter(templateController));
 app.use('/api/files',createAttachmentRouter(attachmentController))
 app.use('/api/email',createEmailRouter(emailController))
 app.use('/api/loghistory', createLogHistoryRouter(logHistoryController))
+app.use('/api/sent-records', createSentEmailRecordsRouter(sentEmailRecordsController))
 
 const port = process.env.PORT || 8000;
   app.listen(port, () => {

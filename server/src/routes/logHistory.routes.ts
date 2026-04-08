@@ -7,6 +7,7 @@ import { authMiddleware } from "../middleware/auth.middleware";
 export const createLogHistoryRouter = (logHistoryController: LogHistoryController): Router => {
   const router = Router();
 
+  router.get('/dashboard/stats', authMiddleware, logHistoryController.getDashboardStats);
   router.get('/:last_sent_at?',authMiddleware, logHistoryController.getUserEmailLogs);
 
   return router;

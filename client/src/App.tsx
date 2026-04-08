@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import  { AuthProvider } from './context/auth-context';
+import { AuthProvider, PrivateRoute, PublicOnlyRoute } from './context/auth-context';
 import Loginpage from './pages/login-page';
 import DashboardPage from './pages/Dashboard-page';
 import SendEmailForm from './components/Send-Email-form';
@@ -10,27 +10,33 @@ import TemplateList from './pages/Templates-page';
 import Templatepage from './pages/Template-page';
 import AttachmentPage from './pages/Attachments-page';
 import HistoryPage from './pages/History-page';
+import SentRecordsPage from './pages/SentRecords-page';
+import AuthCallbackPage from './pages/AuthCallback-page';
 
 function App() {
   return (
-<AuthProvider>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Loginpage />} />
-          {/* Default Route */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Public only — redirects to /dashboard if logged in */}
+          <Route path="/login" element={<PublicOnlyRoute><Loginpage /></PublicOnlyRoute>} />
+          <Route path="/" element={<PublicOnlyRoute><Loginpage /></PublicOnlyRoute>} />
 
-          <Route path='/dashboard' element={<DashboardPage/>}>
-          <Route index element={<Dashboard />} />
-          <Route path="send" element={<SendEmailForm />} />
-          <Route path="templates" element={<TemplateList />} />
-          <Route path="templates/:templateId?" element={<Templatepage/>} />
-          <Route path="attachments" element={<AttachmentPage/>} />
-          <Route path="history" element={<HistoryPage/>} />
+          {/* Auth callback after Google OAuth */}
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
+          {/* Public — no auth required */}
+          <Route path="/records" element={<SentRecordsPage />} />
+
+          {/* Protected — redirects to /login if not logged in */}
+          <Route path='/dashboard' element={<PrivateRoute><DashboardPage /></PrivateRoute>}>
+            <Route index element={<Dashboard />} />
+            <Route path="send" element={<SendEmailForm />} />
+            <Route path="templates" element={<TemplateList />} />
+            <Route path="templates/:templateId?" element={<Templatepage />} />
+            <Route path="attachments" element={<AttachmentPage />} />
+            <Route path="history" element={<HistoryPage />} />
           </Route>
-
         </Routes>
       </BrowserRouter>
     </AuthProvider>

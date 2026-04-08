@@ -5,6 +5,15 @@ import logger from "../utils/logger";
 export class LogHistoryService {
   constructor(private historyRepository: HistoryRepository) {}
 
+  async getDashboardStats(user_id: string) {
+    try {
+      return await this.historyRepository.getDashboardStats(user_id);
+    } catch (error) {
+      logger.error("Error in getDashboardStats service method", { error });
+      return null;
+    }
+  }
+
   async getEmailLogs(
     user_id: string,
     last_sent_at: string | null

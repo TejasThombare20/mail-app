@@ -9,6 +9,25 @@ export class LogHistoryController {
 
     }
 
+getDashboardStats = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const user_id = req.user?.userId!;
+        logger.info("Fetching dashboard stats", { user_id });
+
+        const stats = await this.logHistoryService.getDashboardStats(user_id);
+
+        if (!stats) {
+            res.status(404).json({ message: "Unable to fetch dashboard stats", error: "Failed to fetch stats", success: false });
+            return;
+        }
+
+        res.status(200).json({ data: stats, message: "Dashboard stats fetched successfully", success: true });
+    } catch (error) {
+        logger.error("Error fetching dashboard stats", { error });
+        res.status(500).json({ message: "Internal Server Error", error: "Failed to fetch dashboard stats", success: false });
+    }
+}
+
 getUserEmailLogs = async (req : AuthRequest , res : Response)  : Promise<void> =>{
 
     try {

@@ -17,6 +17,13 @@ export class UserRepository {
     return result.rows[0];
   }
 
+  async findUserById(id: string): Promise<IUser | null> {
+    if (!id) return null;
+    const query = 'SELECT * FROM users WHERE id = $1';
+    const result = await this.pool.query(query, [id]);
+    return result.rows[0] || null;
+  }
+
   async findUserByEmail(email: string): Promise<IUser | null> {
     logger.info("Finding user by email", { email })
     if (!email) {

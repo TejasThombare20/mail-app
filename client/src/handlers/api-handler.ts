@@ -1,5 +1,4 @@
   import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
-  import Cookies from 'js-cookie';
 
   const BASE_URL =
     import.meta.env.MODE === "production"
@@ -82,10 +81,11 @@
         
         switch (status) {
           case 401:
-            // Handle unauthorized - Clear auth and redirect to login
-            Cookies.remove('auth_token');
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login';
+            // Handle unauthorized — don't redirect if we're just checking auth status
+            if (!error.config?.url?.includes('/api/auth/me')) {
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+              }
             }
             break;
           case 403:

@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Paperclip, 
-  LayoutTemplate, 
-  Clock, 
-  Mail, 
-  BarChart, 
+import {
+  Paperclip,
+  LayoutTemplate,
+  Clock,
+  Mail,
+  BarChart,
   Settings,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Users
 } from 'lucide-react';
 import { Button } from './ui-component/Button';
 import { cn } from '../lib/utils';
@@ -48,6 +49,11 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'History',
       href: '/dashboard/history',
       icon: <Clock className="h-5 w-5" />
+    },
+    {
+      title: 'Sent Records',
+      href: '/records',
+      icon: <Users className="h-5 w-5" />
     },
     {
       title: 'Settings',
