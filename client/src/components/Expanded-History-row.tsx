@@ -35,13 +35,13 @@ const ExpandedHistoryrow = ({ row, columns }: Props) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {row.original.receiver_emails
+                    {(row.original.email_logs || [])
                       .filter((_, idx) => idx % 2 === 0)
-                      .map((recipient, idx) => (
+                      .map((log, idx) => (
                         <TableRow key={idx} className="break-inside-avoid">
-                          <TableCell>{recipient.email}</TableCell>
+                          <TableCell>{log.recipient_email}</TableCell>
                           <TableCell>
-                            <StatusBadge status={recipient.status} />
+                            <StatusBadge status={log.status} />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -59,13 +59,13 @@ const ExpandedHistoryrow = ({ row, columns }: Props) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {row.original.receiver_emails
+                    {(row.original.email_logs || [])
                       .filter((_, idx) => idx % 2 !== 0)
-                      .map((recipient, idx) => (
+                      .map((log, idx) => (
                         <TableRow key={idx} className="break-inside-avoid">
-                          <TableCell>{recipient.email}</TableCell>
+                          <TableCell>{log.recipient_email}</TableCell>
                           <TableCell>
-                            <StatusBadge status={recipient.status} />
+                            <StatusBadge status={log.status} />
                           </TableCell>
                         </TableRow>
                       ))}

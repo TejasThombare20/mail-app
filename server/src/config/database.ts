@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import dotenv from "dotenv";
-
+import logger from "../utils/logger";
 
 dotenv.config();
 
@@ -17,10 +17,10 @@ const pool = new Pool({
 export const connectDB = async (): Promise<void> => {
   try {
     const client = await pool.connect();
-    console.log("🟢 PostgreSQL connected successfully!");
+    logger.info("PostgreSQL connected successfully!");
     client.release();
   } catch (err) {
-    console.error("🔴 Error connecting to PostgreSQL:", err);
+    logger.error("Error connecting to PostgreSQL:", err);
     process.exit(1); 
   }
 };

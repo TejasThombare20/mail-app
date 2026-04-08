@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import { Attachment } from "../types/attachment.types";
-import e from "express";
+import logger from "../utils/logger";
 
 export class AttachmentRepository {
   constructor(private pool: Pool) {} // Replace 'any' with your database client type
@@ -27,7 +27,7 @@ export class AttachmentRepository {
       );
       return result.rows[0];
     } catch (error) {
-      console.log("error while creating attachment", error);
+      logger.error("Error while creating attachment", { error });
       return null;
     }
   }
@@ -40,7 +40,7 @@ export class AttachmentRepository {
       );
       return result.rows[0] || null;
     } catch (error) {
-      console.log("error while fetching attachment by Id", error);
+      logger.error("Error while fetching attachment by Id", { error });
       return null;
     }
   }
@@ -54,7 +54,7 @@ export class AttachmentRepository {
       );
       return result?.rows;
     } catch (error) {
-      console.log("error while finding attachments by ids", error);
+      logger.error("Error while finding attachments by ids", { error });
       return null;
     }
   }
@@ -67,7 +67,7 @@ export class AttachmentRepository {
       );
       return result?.rows;
     } catch (error) {
-      console.log("error while finding attachments by user id", error);
+      logger.error("Error while finding attachments by user id", { error });
       return null;
     }
   }
@@ -83,7 +83,7 @@ export class AttachmentRepository {
       }
       return true;
     } catch (error) {
-      console.log("error while deleting attachment from ", error);
+      logger.error("Error while deleting attachment", { error });
       return false;
     }
   }
@@ -118,7 +118,7 @@ export class AttachmentRepository {
       return result.rows[0];
       
     } catch (error) {
-      console.log("error while updating the attachment" , error)
+      logger.error("Error while updating the attachment", { error })
       return null;
     }
 

@@ -1,5 +1,5 @@
 CREATE TABLE user_tokens (
-  id UUID PRIMARY KEY NOT NULL 
+  id UUID PRIMARY KEY NOT NULL,
   user_id VARCHAR(30) REFERENCES users(id)  NOT NULL,
   google_token TEXT NOT NULL,  
   token_expiry TIMESTAMP WITH TIME ZONE NOT NULL,

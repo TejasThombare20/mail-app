@@ -2,6 +2,8 @@ import express, { Express, Request, Response , Application } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import logger from './utils/logger';
 import pool, { connectDB } from './config/database';
 import { UserRepository } from './repository/user.repository';
 import { AuthService } from './services/auth.service';
@@ -38,6 +40,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// HTTP request logging - logs method, url, status, response time
+const morganStream = {
+  write: (message: string) => logger.http(message.trim()),
+};
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms', { stream: morganStream }));
 
 connectDB();
 
@@ -78,5 +85,5 @@ app.use('/api/loghistory', createLogHistoryRouter(logHistoryController))
 
 const port = process.env.PORT || 8000;
   app.listen(port, () => {
-  console.log(`mail-app server is running at http://localhost:${port}`);
+  logger.info(`mail-app server is running at http://localhost:${port}`);
 });

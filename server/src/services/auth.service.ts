@@ -1,9 +1,17 @@
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { UserRepository } from "../repository/user.repository";
+import logger from "../utils/logger";
 import { IUser } from "../types/users.types";
-import { auth } from "../config/firebase-config";
-import { DecodedIdToken } from "firebase-admin/auth";
+
+// [LEGACY - Firebase Auth]
+// Initially, authentication was handled via Firebase Admin SDK.
+// The frontend would sign in with Google through Firebase, get a Firebase ID token,
+// and send it to the backend. The backend would verify it using firebase-admin.
+// This was replaced by a direct Google OAuth2 flow (see handleGoogleCallback) to
+// remove the Firebase dependency and have full control over tokens and user sessions.
+// import { auth } from "../config/firebase-config";
+// import { DecodedIdToken } from "firebase-admin/auth";
 import { TokenRepository } from "../repository/token.repository";
 import { IGoogleUserInfo } from "../types/auth.types";
 
@@ -27,8 +35,9 @@ export class AuthService {
         scope: [
           "https://www.googleapis.com/auth/userinfo.email",
           "https://www.googleapis.com/auth/userinfo.profile",
-          "https://www.googleapis.com/auth/gmail.send",
+          "https://www.googleapis.com/auth/gmail.send", 
           "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/gmail.readonly"
         ],
         prompt: "consent", // Force to show consent screen to get refresh_token
       });
@@ -39,7 +48,7 @@ export class AuthService {
 
       return consentScreenURL;
     } catch (error) {
-      console.log("error while generating an consetScreenURL", error);
+      logger.error("Error while generating consent screen URL", { error });
       return null;
     }
   }
@@ -70,10 +79,10 @@ export class AuthService {
       );
     }
 
-    // Generate JWT for API authentication
+    // Generate JWT for API authentication  
     const jwtToken = this.generateJWT(user);
 
-    console.log("jwt token generated", jwtToken);
+    logger.info("JWT token generated for user", { userId: user.id });
 
     return { user, token: jwtToken };
   }
@@ -87,7 +96,7 @@ export class AuthService {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to get user info");
+      throw new Error("Failed to get user info"); 
     }
 
     return response.json();
@@ -120,56 +129,46 @@ export class AuthService {
     }
   }
 
-  async verifyFirebaseToken(token: string): Promise<DecodedIdToken> {
-    const data = await auth.verifyIdToken(token);
-    console.log("data", data);
-    return data;
-  }
+  // [LEGACY - Firebase Auth Step 1]
+  // The frontend sent a Firebase ID token to the backend after signing in via Firebase Google provider.
+  // This method verified that token using firebase-admin and returned the decoded user info (email, uid, etc).
+  // Replaced by: the OAuth2 authorization code flow in handleGoogleCallback, where the backend
+  // directly exchanges a Google auth code for tokens — no Firebase in the middle.
+  // async verifyFirebaseToken(token: string): Promise<DecodedIdToken> {
+  //   const data = await auth.verifyIdToken(token);
+  //   return data;
+  // }
 
-  async handleGoogleSignIn(
-    firebaseUser: DecodedIdToken,
-    code: string
-  ): Promise<{ user: IUser; token: string }> {
-    console.log("HelLo");
-    let user = await this.userRepository.findUserByEmail(firebaseUser.email!);
-
-    const { tokens } = await this.oauth2Client.getToken(code);
-    console.log("Hello2");
-    if (!user) {
-      console.log("Hello3 ");
-
-      console.log("token", tokens);
-
-      user = await this.userRepository.createUser({
-        email: firebaseUser.email!,
-        name: firebaseUser.name!,
-        picture: firebaseUser.picture,
-        id: firebaseUser?.uid,
-      });
-
-      // Store Google tokens
-      await this.tokenRepository.saveUserToken(
-        user?.id,
-        tokens?.access_token!,
-        new Date(tokens.expiry_date!),
-        tokens?.refresh_token!
-      );
-    }
-
-    const token = this.generateJWT(user);
-
-    const tokenExpiry = new Date();
-    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 1 hour
-    // console.log({userId : user.id, token : firebaseUser?.accessToken, tokenExpiry, refreshToken :firebaseUser?.refreshToken  })
-    // await this.tokenRepository.saveUserToken(
-    //   user?.id,
-    //   firebaseUser?.accessToken!, // Firebase token includes Google access token
-    //   tokenExpiry,
-    //   firebaseUser?.refreshToken
-    // );
-    console.log("hello4");
-    return { user, token };
-  }
+  // [LEGACY - Firebase Auth Step 2]
+  // After verifyFirebaseToken decoded the Firebase token, this method used the decoded Firebase user
+  // (which carries uid, email, name, picture) to create/find the user in our DB and issue a JWT.
+  // The Google OAuth code was also exchanged here to get access/refresh tokens for Gmail API usage.
+  // Problem: Firebase uid was used as the user id, tightly coupling our DB to Firebase.
+  // Replaced by: handleGoogleCallback which does the same thing but derives the user id directly
+  // from Google's userinfo API, removing the Firebase dependency entirely.
+  // async handleGoogleSignIn(
+  //   firebaseUser: DecodedIdToken,
+  //   code: string
+  // ): Promise<{ user: IUser; token: string }> {
+  //   let user = await this.userRepository.findUserByEmail(firebaseUser.email!);
+  //   const { tokens } = await this.oauth2Client.getToken(code);
+  //   if (!user) {
+  //     user = await this.userRepository.createUser({
+  //       email: firebaseUser.email!,
+  //       name: firebaseUser.name!,
+  //       picture: firebaseUser.picture,
+  //       id: firebaseUser?.uid,
+  //     });
+  //     await this.tokenRepository.saveUserToken(
+  //       user?.id,
+  //       tokens?.access_token!,
+  //       new Date(tokens.expiry_date!),
+  //       tokens?.refresh_token!
+  //     );
+  //   }
+  //   const token = this.generateJWT(user);
+  //   return { user, token };
+  // }
 
   private generateJWT(user: IUser): string {
     return jwt.sign(

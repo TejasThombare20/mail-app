@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { ICreateUser, IUser } from '../types/users.types';
+import logger from '../utils/logger';
 
 
 export class UserRepository {
@@ -17,7 +18,7 @@ export class UserRepository {
   }
 
   async findUserByEmail(email: string): Promise<IUser | null> {
-    console.log({email})
+    logger.info("Finding user by email", { email })
     if (!email) {
       return null;
     }

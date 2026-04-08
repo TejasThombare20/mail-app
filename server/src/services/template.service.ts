@@ -1,5 +1,6 @@
 import { AttachmentRepository } from "../repository/attachment.repository";
 import { TemplateRepository } from "../repository/template.repository";
+import logger from "../utils/logger";
 import { ITemplate } from "../types/template.types";
 
 export class TemplateService {
@@ -33,7 +34,7 @@ export class TemplateService {
 
       return newTemplate;
     } catch (error) {
-      console.log("error in template service", error);
+      logger.error("Error in template service - createTemplate", { error });
       return null;
     }
   }
@@ -65,9 +66,7 @@ export class TemplateService {
       );
 
       if (!template) {
-        console.log(
-          `template not found for userId ${user_id} and templateId ${updatedTemplateData.id} `
-        );
+        logger.warn("Template not found for update", { user_id, templateId });
         return null;
       }
 
@@ -83,7 +82,7 @@ export class TemplateService {
 
       return updatedTemplate;
     } catch (error) {
-      console.log("error in update template service", error);
+      logger.error("Error in template service - updateTemplate", { error });
       return null;
     }
   }

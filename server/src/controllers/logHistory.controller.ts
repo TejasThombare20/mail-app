@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { LogHistoryService } from "../services/LogHistory.service";
+import logger from "../utils/logger";
 
 export class LogHistoryController {
 
@@ -15,7 +16,7 @@ getUserEmailLogs = async (req : AuthRequest , res : Response)  : Promise<void> =
 
         const last_sent_at  = req.params.last_sent_at || null
 
-        console.log('last',last_sent_at)
+        logger.info("Fetching email logs", { user_id, last_sent_at })
         
         const userHistoryLogData = await this.logHistoryService.getEmailLogs(user_id ,last_sent_at)
 

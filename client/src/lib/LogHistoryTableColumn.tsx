@@ -8,7 +8,6 @@ import {
   ChevronRight,
   EyeIcon
 } from "lucide-react";
-import { calculateSuccessRate } from "./utils";
 import { Dispatch, SetStateAction } from "react";
 import CircularProgress from "../components/ui-component/CircularProgress";
 
@@ -81,12 +80,12 @@ export const getColumns = ({
       },
     },
     {
-      accessorKey: "receiver_emails",
+      id: "success_rate",
       header: "Success Rate",
       cell: ({ row }) => {
-        const { rate} = calculateSuccessRate(
-          row.original.receiver_emails
-        );
+        const total = row.original.total_emails || 0;
+        const sent = row.original.sent_count || 0;
+        const rate = total > 0 ? Math.round((sent / total) * 100) : 0;
         return (
           <div className="flex items-center">
             <CircularProgress
@@ -100,18 +99,18 @@ export const getColumns = ({
       },
     },
     {
-      accessorKey: "sent_at",
+      accessorKey: "started_at",
       header: ({ column }) => (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Sent At
+          Started At
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
-        const date = new Date(row.getValue("sent_at"));
+        const date = new Date(row.getValue("started_at"));
         return <div>{date.toLocaleDateString()}</div>;
       },
     },

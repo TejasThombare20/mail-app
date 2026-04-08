@@ -1,13 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  getAuth, 
-} from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
-import { initializeApp } from 'firebase/app';
-import {AlertCircle} from "lucide-react"
-import { Alert, AlertDescription } from '../components/ui-component/Alert';
+import { useState } from 'react';
+// NOTE: Firebase auth is no longer used — Google OAuth is handled server-side via /api/auth/google/url.
+// Keeping these imports commented out for reference in case Firebase auth needs to be re-enabled.
+// import { getAuth } from 'firebase/auth';
+// import { initializeApp } from 'firebase/app';
+// import { firebaseConfig } from '../config/firebaseConfig';
 import { Button } from '../components/ui-component/Button';
-import { firebaseConfig } from '../config/firebaseConfig';
 import apiHandler, { ApiError } from '../handlers/api-handler';
 import { getGoolgleUrlApiResponse } from '../types/api-response-type';
 import { useHandleApiError } from '../handlers/useErrorToast';
@@ -15,12 +12,11 @@ import { useHandleApiError } from '../handlers/useErrorToast';
 
 type Props = {}
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Firebase app/auth initialization — no longer needed since OAuth is server-side.
+// const app = initializeApp(firebaseConfig);
+// const auth = getAuth(app);
 
-const Loginpage = (props: Props) => {
-  const navigate = useNavigate();
-  const [error, setError] = useState<string>('');
+const Loginpage = (_props: Props) => {
   const [isLoading, setIsLoading] = useState(false);
 
     const showErrorToast = useHandleApiError();
@@ -109,15 +105,13 @@ const Loginpage = (props: Props) => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      console.log("Hello")
         const responseData = await apiHandler.get<getGoolgleUrlApiResponse>('/api/auth/google/url');
         console.log("responseData", responseData?.data)
 
-        if (!responseData?.success && responseData?.data){
+        if (!responseData?.success || !responseData?.data){
           throw new Error("something went wrong")
-          return;
         }
-        window.location.href = responseData?.data!
+        window.location.href = responseData.data
 
         setIsLoading(false);
 
@@ -136,13 +130,6 @@ const Loginpage = (props: Props) => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
           <div>
             <Button
               onClick={handleGoogleSignIn}

@@ -7,7 +7,6 @@ import { HistoryRepository } from "../repository/history.repository";
 import { EmailStatus } from "../types/template.types";
 import {
   checkMXRecord,
-  convertTailwindHtmlToSendableEmail,
   createEmailBody,
   extractReceiverNameFromEmail,
   isValidEmail,
@@ -17,6 +16,8 @@ import { Attachment, EmailAttachment } from "../types/attachment.types";
 import { AttachmentService } from "./attachment.service";
 import fs from 'fs';
 import path from 'path';
+import logger from '../utils/logger';
+import pool from '../config/database';
 
 // Helper function to add delay between emails
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -93,7 +94,7 @@ export class EmailService {
     templateId: string,
     subject: string,
     recipients: string[],
-    local_variables: Array<{ key: string; description: string; id: string }>,
+    local_variables: Array<{ key: string; description: string; id: string; recipient_email?: string; value?: string }>,
     global_variables: Array<{ key: string; value: string; id: string }>
   ) {
     const gmail = await this.getGmailClient(userId);
@@ -114,11 +115,11 @@ export class EmailService {
         template?.attachments
       );
       if (!attachmentsData) {
-        console.log("Unable to find attachments");
+        logger.error("Unable to find attachments", { templateId });
         throw new Error("Failed to laod attachments");
       }
       if (attachmentsData.length !== template.attachments.length) {
-        console.log("One or more attachment IDs are invalid");
+        logger.error("One or more attachment IDs are invalid", { templateId });
         throw new Error("One or more attachment IDs are invalid");
         return;
       }
@@ -132,116 +133,130 @@ export class EmailService {
       attachements = bufferedAttachmentsData;
     }
 
-    // For local environment, add the local PDF attachment
-    try {
-      // Try multiple possible paths
-      const possiblePaths = [
-        path.join(process.cwd(), 'src', 'media', 'Tejas_Thombare_IIIT_Gwalior.pdf'),
-        path.join(process.cwd(), '..', 'server', 'src', 'media', 'Tejas_Thombare_IIIT_Gwalior.pdf'),
-        '/Users/tejas/Documents/web-dev/mailGenie/mail-app/server/src/media/Tejas_Thombare_IIIT_Gwalior.pdf',
-        path.resolve(__dirname, '..', 'media', 'Tejas_Thombare_IIIT_Gwalior.pdf')
-      ];
-      
-      let pdfPath: string | null = null;
-      let fileFound = false;
-      
-      // Try each path until we find one that works
-      for (const testPath of possiblePaths) {
-        console.log('Trying path:', testPath);
-        try {
-          fs.accessSync(testPath, fs.constants.R_OK);
-          pdfPath = testPath;
-          fileFound = true;
-          console.log('Found PDF at:', pdfPath);
-          break;
-        } catch (err) {
-          console.log('Path not accessible:', testPath);
+    // If no template attachments and DEFAULT_ATTACHMENT_ENABLED is true, attach the default local PDF
+    if (attachements.length === 0 && process.env.DEFAULT_ATTACHMENT_ENABLED === 'true') {
+      try {
+        const attachmentDir = process.env.DEFAULT_ATTACHMENT_DIR;
+        const attachmentFileName = process.env.DEFAULT_ATTACHMENT_FILE_NAME!;
+
+        if (!attachmentFileName) {
+          throw new Error('DEFAULT_ATTACHMENT_FILE_NAME env variable is not set');
         }
+
+        const pdfPath = path.join(process.cwd(), attachmentDir!, attachmentFileName);
+        const pdfContent = fs.readFileSync(pdfPath);
+
+        const localPdfAttachment: EmailAttachment = {
+          filename: attachmentFileName,
+          content: pdfContent.toString('base64'),
+          mimeType: 'application/pdf',
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          file_url: `file://${pdfPath}`,
+        };
+
+        attachements.push(localPdfAttachment);
+        logger.info("Default  attachment added", { pdfPath });
+      } catch (error) {
+        logger.error("Failed to load default attachment", { error });
       }
-      
-      if (!fileFound || !pdfPath) {
-        throw new Error('Could not find PDF file in any of the expected locations');
-      }
-      
-      const pdfContent = fs.readFileSync(pdfPath);
-      const base64Content = pdfContent.toString('base64');
-      
-      const localPdfAttachment: EmailAttachment = {
-        filename: 'Tejas_Thombare_IIIT_Gwalior.pdf',
-        content: base64Content,
-        mimeType: 'application/pdf',
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        file_url: `file://${pdfPath}`
-      };
-      
-      attachements.push(localPdfAttachment);
-      console.log('PDF attachment added successfully');
-    } catch (error) {
-      console.error('Failed to load local PDF attachment:', error);
     }
 
-    // Create history record with initial status
-    const historyRecord = await this.historyRepository.create({
+    // Create session record
+    const session = await this.historyRepository.createSession({
       user_id: userId,
       template_id: templateId,
-      global_variables: global_variables,
-      receiver_emails: recipients.map((email) => ({
-        email: email,
-        status: "queued",
-        variables: local_variables,
-      })),
       subject: subject,
-      status: "pending",
+      global_variables: global_variables,
+      total_emails: recipients.length,
     });
 
     const emailStatuses: EmailStatus[] = [];
+    let sentCount = 0;
+    let failedCount = 0;
 
     for (const recipient of recipients) {
       let personalizedHtml = template?.html_content;
+      let personalizedSubject = subject;
 
       if (!isValidEmail(recipient) || !(await checkMXRecord(recipient))) {
-        console.log(`Invalid email detected: ${recipient}`);
+        logger.warn("Invalid email detected", { recipient });
         emailStatuses.push({ email: recipient, status: "invalid" });
+        failedCount++;
+
+        // Log the invalid email
+        await this.historyRepository.createEmailLog({
+          session_id: session.id,
+          user_id: userId,
+          template_id: templateId,
+          recipient_email: recipient,
+          local_variables: [],
+          global_variables: global_variables,
+          subject: subject,
+          status: "invalid",
+        });
         continue;
       }
 
-      // Extract receiver name from email
-      const receiverName = extractReceiverNameFromEmail(recipient);
-
-      // Replace global variables
+      // Replace global variables in both HTML and subject
       global_variables.forEach(({ key, value }) => {
-        personalizedHtml = personalizedHtml.replace(
-          new RegExp(`{{${key}}}`, "g"),
-          String(value)
-        );
+        const regex = new RegExp(`{{${key}}}`, "g");
+        personalizedHtml = personalizedHtml.replace(regex, String(value));
+        personalizedSubject = personalizedSubject.replace(regex, String(value));
       });
 
-      // local_variables.forEach(({ description, id, key }) => {
-      //   personalizedHtml = personalizedHtml.replace(
-      //     new RegExp(`{{${key}}}`, "g"),
-      //     String(description)
-      //   );
-      // });
-      // Note: Local variables replacement is commented out as we're now using the receiver_name extraction instead
-
-      // Replace {{receiver_name}} placeholder with extracted name
-      personalizedHtml = personalizedHtml.replace(
-        new RegExp(`{{receiver_name}}`, "g"),
-        receiverName
+      // Find per-recipient local variables (those with recipient_email and value set)
+      const recipientLocalVars = local_variables.filter(
+        (v) => v.recipient_email && v.recipient_email === recipient && v.value
       );
 
-      const HTML = `
-      <div><div class="relative p-4 transition-all group h-full overflow-scroll " draggable="false"><div class="items-center border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80 absolute -top-[23px] -left-[1px] rounded-none rounded-t-lg hidden">Body</div><div class="p-[2px] w-full m-[5px] relative text-[16px] transition-all !border-blue-500 !border-solid" style="color: rgb(217, 32, 211); background-position: center center; object-fit: cover; background-repeat: no-repeat; text-align: left; opacity: 1; font-family: &quot;Courier New&quot;, monospace; font-size: 50px; line-height: 2; padding: 10px; font-weight: bold;"><span contenteditable="false">Welcome from client side ....&nbsp;</span></div></div></div>
-      `;
+      if (recipientLocalVars.length > 0) {
+        // Use per-recipient local variable values for replacement in HTML and subject
+        recipientLocalVars.forEach(({ key, value }) => {
+          const regex = new RegExp(`{{${key}}}`, "g");
+          personalizedHtml = personalizedHtml.replace(regex, String(value));
+          personalizedSubject = personalizedSubject.replace(regex, String(value));
+        });
+      } else {
+        // Fallback: extract receiver name from email for {{receiver_name}}
+        const receiverName = extractReceiverNameFromEmail(recipient);
+        const nameRegex = new RegExp(`{{receiver_name}}`, "g");
+        personalizedHtml = personalizedHtml.replace(nameRegex, receiverName);
+        personalizedSubject = personalizedSubject.replace(nameRegex, receiverName);
 
-      const testEmail = convertTailwindHtmlToSendableEmail(HTML);
+        // Also apply any generic local variables (without recipient_email)
+        local_variables
+          .filter((v) => !v.recipient_email)
+          .forEach(({ key, value }) => {
+            if (value) {
+              const regex = new RegExp(`{{${key}}}`, "g");
+              personalizedHtml = personalizedHtml.replace(regex, String(value));
+              personalizedSubject = personalizedSubject.replace(regex, String(value));
+            }
+          });
+      }
+
+      // Create per-recipient email log with "pending" status
+      const recipientVarsForLog = recipientLocalVars.length > 0
+        ? recipientLocalVars
+        : local_variables.filter((v) => !v.recipient_email || v.recipient_email === recipient);
+
+      const emailLog = await this.historyRepository.createEmailLog({
+        session_id: session.id,
+        user_id: userId,
+        template_id: templateId,
+        recipient_email: recipient,
+        local_variables: recipientVarsForLog,
+        global_variables: global_variables,
+        subject: personalizedSubject,
+        status: "pending",
+      });
 
       const emailBody = createEmailBody(
         recipient,
-        subject,
+        personalizedSubject,
         personalizedHtml,
         attachements
-      );    
+      );
 
       // Encode the entire message
       const encodedMessage = Buffer.from(emailBody)
@@ -256,65 +271,60 @@ export class EmailService {
         });
 
         if (response?.status === 200) {
-          emailStatuses.push({
-            email: recipient,
-            status: "sent",
-            variables: local_variables,
-          });
+          emailStatuses.push({ email: recipient, status: "sent" });
+          sentCount++;
 
-          // Update individual recipient status
-          await this.historyRepository.updateRecipientStatus(
-            historyRecord.id,
-            recipient,
-            "sent"
-          );
+          await this.historyRepository.updateEmailLogStatus(emailLog.id, "sent");
+
+          // Upsert into sent_email_records
+          try {
+            const firstName = recipientLocalVars.find((v) => v.key === "receiver_name")?.value
+              || extractReceiverNameFromEmail(recipient);
+            const companyName = global_variables.find((v) => v.key === "company_name")?.value || null;
+
+            await pool.query(
+              `INSERT INTO sent_email_records (first_name, email, company_name, sent_at)
+               VALUES ($1, $2, $3, NOW())
+               ON CONFLICT (email) DO UPDATE
+                 SET first_name = EXCLUDED.first_name,
+                     company_name = COALESCE(EXCLUDED.company_name, sent_email_records.company_name),
+                     sent_at = EXCLUDED.sent_at`,
+              [firstName, recipient, companyName]
+            );
+          } catch (recordErr) {
+            logger.error("Failed to upsert sent_email_record", { recipient, error: recordErr });
+          }
         } else {
-          emailStatuses.push({
-            email: recipient,
-            status: "failed",
-            variables: local_variables,
-          });
-
-          // Update individual recipient status
-          await this.historyRepository.updateRecipientStatus(
-            historyRecord.id,
-            recipient,
-            "failed"
-          );
+          emailStatuses.push({ email: recipient, status: "failed" });
+          failedCount++;
+          await this.historyRepository.updateEmailLogStatus(emailLog.id, "failed");
         }
-        console.log(`response of email ${recipient}`, response?.data);
-
-        console.log("db updated");
+        logger.info("Email sent successfully", { recipient, messageId: response?.data?.id });
       } catch (emailError) {
-        console.error(`Error while sending email to ${recipient}:`, emailError);
-
-        emailStatuses.push({
-          email: recipient,
-          status: "failed",
-          variables: local_variables,
-        });
+        logger.error("Error while sending email", { recipient, error: emailError });
+        emailStatuses.push({ email: recipient, status: "failed" });
+        failedCount++;
 
         try {
-          await this.historyRepository.updateRecipientStatus(
-            historyRecord.id,
-            recipient,
-            "failed"
-          );
+          await this.historyRepository.updateEmailLogStatus(emailLog.id, "failed");
         } catch (dbError) {
-          console.error(`DB update failed for ${recipient}:`, dbError);
+          logger.error("DB update failed for recipient", { recipient, error: dbError });
         }
       }
-      
+
       // Add a delay between sending emails (2.5 seconds)
       if (recipients.indexOf(recipient) < recipients.length - 1) {
         await delay(2500);
       }
     }
-    // Update overall history status
-    const finalStatus = emailStatuses.every((s) => s.status === "sent")
-      ? "sent"
-      : "failed";
-    await this.historyRepository.updateStatus(historyRecord.id, finalStatus);
+
+    // Update session with final counts and status
+    const finalStatus = sentCount === recipients.length
+      ? "completed"
+      : failedCount === recipients.length
+        ? "failed"
+        : "completed";
+    await this.historyRepository.updateSessionStatus(session.id, finalStatus, sentCount, failedCount);
 
     return emailStatuses;
   }

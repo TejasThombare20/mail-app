@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
+import logger from "../utils/logger";
 
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -14,7 +15,7 @@ export class AuthController {
 
     res.status(200).json({ data : url, message : "consent screen url fetch successfully" , success : true });
     } catch (error) {
-      console.error("Auth error:", error);
+      logger.error("Auth error:", error);
       res.status(500).json({ message :"Internal Server Error" ,error: "Failed to get authorization URL" , success : false });
     }
   };
@@ -42,7 +43,7 @@ export class AuthController {
       res.redirect(redirectUrl);
       // res.json(result);
     } catch (error) {
-      console.error("Auth error:", error);
+      logger.error("Auth error:", error);
       res.status(500).json({ error: "Authentication failed" });
     }
   };

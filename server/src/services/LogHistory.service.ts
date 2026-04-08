@@ -1,5 +1,6 @@
 import { HistoryRepository } from "../repository/history.repository";
 import { EmailLog } from "../types/historyLogs.types";
+import logger from "../utils/logger";
 
 export class LogHistoryService {
   constructor(private historyRepository: HistoryRepository) {}
@@ -19,7 +20,7 @@ export class LogHistoryService {
       }
       return emailLogsData;
     } catch (error) {
-      console.log("error in getUserLogs service method ", error);
+      logger.error("Error in getUserLogs service method", { error });
       return null;
     }
   }

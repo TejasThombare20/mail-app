@@ -7,5 +7,5 @@ CREATE TABLE attachments (
     file_size INT NOT NULL,     
     filepath TEXT NOT NULL,                  
     uploaded_at TIMESTAMP DEFAULT NOW() NOT NULL, 
-    expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL
 );

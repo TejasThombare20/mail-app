@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { EmailService } from "../services/email.service";
+import logger from "../utils/logger";
 
 
 export class EmailController {
@@ -35,7 +36,7 @@ export class EmailController {
     
           res.status(200).json({ message: "Email sent successfully" , success : true });
         } catch (error) {
-          console.error(error);
+          logger.error("Failed to send email", { error });
           res.status(500).json({ error: "Failed to send email" , message : "Internal Server Error" ,success : false});
         }
       };

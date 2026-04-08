@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import logger from '../utils/logger';
 
 export interface AuthRequest extends Request {
   user?: { userId: string; email: string };
@@ -27,7 +28,7 @@ export const authMiddleware = (
       req.user = decoded;
       next();
     } catch (error) {
-      console.log("error", error);
+      logger.warn("Auth token verification failed", { error });
       res.status(401).json({ error: 'Invalid token' , message : "Token expired error " , success : false  });
     }
   };

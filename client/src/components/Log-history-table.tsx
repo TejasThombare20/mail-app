@@ -71,7 +71,7 @@ const Historytable = () => {
     // getSortedRowModel: getSortedRowModel(),
     // getFilteredRowModel: getFilteredRowModel(),
     //@ts-ignore
-    getSubRows: (row) => row.receiver_emails,
+    getSubRows: (row) => row.email_logs,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
   });

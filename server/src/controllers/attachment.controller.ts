@@ -1,13 +1,14 @@
 import { Response } from "express";
 import { AttachmentService } from "../services/attachment.service";
 import { AuthRequest } from "../middleware/auth.middleware";
+import logger from "../utils/logger";
 
 export class AttachmentController {
   constructor(private attachmentService: AttachmentService) {}
 
   uploadAttachment = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      console.log("req.file",req.file);
+      logger.info("File upload request received", { filename: req.file?.originalname, size: req.file?.size });
 
       if (!req.file) {
         res.status(400).json({ error: "No file provided" , message : "File not found" , success : false });
@@ -25,7 +26,7 @@ export class AttachmentController {
 
       res.status(201).json({data : attachment, message : "successfully store the attachment" , success : true});
     } catch (error) {
-      console.log("error", error);
+      logger.error("Failed to upload attachment", { error });
       res.status(500).json({ error: "Failed to upload attachment" , message : "Internal Server Error", success : true });
     }
   };
@@ -69,7 +70,7 @@ export class AttachmentController {
         success: true,
       });
     } catch (error) {
-      console.log("error while fetching attachments by userId", error);
+      logger.error("Error while fetching attachments by userId", { error });
       res.status(500).json({
         error: "Failed to fetch attachments by userId",
         message: "Internal Server Error ",
@@ -97,7 +98,7 @@ export class AttachmentController {
 
         res.status(200).json({ data : attachmetData, success : true , message : "Attachment fetch successfully"})
       } catch (error) {
-        console.log("error while fetching attachments in controller", error)
+        logger.error("Error while fetching attachment by id", { error })
         res.status(500).json({ error: "Failed to fetch attachment by id" , message : "Internal Server Error" , success : false });
       }
   }

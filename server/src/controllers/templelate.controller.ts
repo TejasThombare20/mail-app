@@ -3,6 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import { TemplateService } from "../services/template.service";
 import { EmailService } from "../services/email.service";
 import { AttachmentService } from "../services/attachment.service";
+import logger from "../utils/logger";
 export class TemplateController {
   constructor(
     private templateService: TemplateService,
@@ -30,7 +31,7 @@ export class TemplateController {
       res.status(201).json({data : template , success: true, message : "Template created successfully"});
 
     } catch (error) {
-      console.log("error", error);
+      logger.error("Failed to create template", { error });
       res.status(500).json({ error: "Failed to create template" , message : "Internal server error" , success : false });
     }
   };
@@ -110,7 +111,7 @@ export class TemplateController {
        res.status(200).json({ data : updatedTemplateData,message : "template update successfully" , success : true})
 
     } catch (error) {
-      console.log("error while updating template", error);
+      logger.error("Error while updating template", { error });
        res.status(500).json({ error : "error while  updating an template",message : "Internal server error " , success : false})
     }
 

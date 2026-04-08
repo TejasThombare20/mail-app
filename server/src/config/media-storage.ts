@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { UploadedFile, uploadFileResponse } from "../types/attachment.types";
+import logger from "../utils/logger";
 
 export class MediaStorage {
   private supabase: SupabaseClient;
@@ -31,10 +32,10 @@ export class MediaStorage {
           upsert: false,
         });
 
-      console.log("data", data);
+      logger.info("Supabase upload response", { path: data?.path });
 
       if (error) {
-        console.log("error while uploading file", error);
+        logger.error("Error while uploading file to Supabase", { error });
         return null;
       }
 
@@ -46,21 +47,21 @@ export class MediaStorage {
 
       return { signedUrl, filePath };
     } catch (error) {
-      console.log("upload error", error);
+      logger.error("File upload error", { error });
       return null;
     }
   }
 
   async generateSignedUrl(filePath: string): Promise<string | null> {
 
-    console.log("filePath", filePath);
+    logger.info("Generating signed URL", { filePath });
 
     const { data, error } = await this.supabase.storage
       .from(this.bucketName)
       .createSignedUrl(filePath, this.urlExpiryTime);
 
     if (error) {
-      console.log("error whhile generating signed url", error);
+      logger.error("Error while generating signed URL", { error });
       return null;
     }
     return data.signedUrl;

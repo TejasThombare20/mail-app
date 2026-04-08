@@ -6,6 +6,7 @@ import {
   UploadedFile,
 } from "../types/attachment.types";
 import axios from "axios";
+import logger from "../utils/logger";
 
 export class AttachmentService {
   constructor(
@@ -43,7 +44,7 @@ export class AttachmentService {
 
       return attachment;
     } catch (error) {
-      console.log("error", error);
+      logger.error("Error uploading attachment", { error });
       return null;
     }
   }
@@ -67,7 +68,7 @@ export class AttachmentService {
       }
       return attachments;
     } catch (error) {
-      console.log("error while fetching user's attachments", error);
+      logger.error("Error while fetching user's attachments", { error });
       return null
     }
   }
@@ -87,7 +88,7 @@ export class AttachmentService {
         }
         return attachment;
     } catch (error) {
-      console.log("error getting attachment by id in repository", error);
+      logger.error("Error getting attachment by id", { error });
       return null
     }
   }
@@ -103,14 +104,14 @@ export class AttachmentService {
     );
 
     if (!isDeletedSuccessful) {
-      console.log("Failed to delete attachment from cloud storage");
+      logger.error("Failed to delete attachment from cloud storage", { id });
       return;
     }
 
     const isDeletedSuccessfromDB = await this.attachmentRepository.delete(id);
 
     if (!isDeletedSuccessfromDB) {
-      console.log("Failed to delete attachment from database");
+      logger.error("Failed to delete attachment from database", { id });
     }
     return;
   }
@@ -120,15 +121,13 @@ export class AttachmentService {
     userId : string
   ): Promise<EmailAttachment | null> {
     if (new Date(attachment.expires_at) < new Date()) {
-      console.log(
-        `URL expired for file: ${attachment.file_name}, with expiry date : ${attachment.expires_at} regenerating...`
-      );
+      logger.warn("URL expired, regenerating signed URL", { fileName: attachment.file_name, expiresAt: attachment.expires_at });
       const signUrl = await this.mediaStorage.generateSignedUrl(
         attachment.filepath
       );
 
       if (!signUrl) {
-        console.log("Failed to generate new  signed URL");
+        logger.error("Failed to generate new signed URL", { filepath: attachment.filepath });
         return null;
       }
       attachment.file_url = signUrl;
@@ -143,7 +142,7 @@ export class AttachmentService {
          }
       );
       if (!updatedAttachment){
-        console.log("failed to update attachments url and expiry time ... ")
+        logger.error("Failed to update attachment URL and expiry time", { attachmentId: attachment.id })
       }
     }
 
@@ -153,7 +152,7 @@ export class AttachmentService {
       });
 
       if (!response.data) {
-        console.log("Failed to fetch attachment data");
+        logger.error("Failed to fetch attachment data", { fileName: attachment.file_name });
         return null;
       }
 
@@ -166,10 +165,7 @@ export class AttachmentService {
           response.headers["content-type"] || "application/octet-stream",
       };
     } catch (error) {
-      console.error(
-        `Error fetching attachment ${attachment.file_name}:`,
-        error
-      );
+      logger.error("Error fetching attachment", { fileName: attachment.file_name, error });
       return null;
     }
   }

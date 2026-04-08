@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { v4 as uuidv4 } from 'uuid';
 import { ITemplate } from "../types/template.types";
+import logger from "../utils/logger";
 
 export class TemplateRepository {
     constructor(private pool: Pool) {}
@@ -27,7 +28,7 @@ export class TemplateRepository {
       return result.rows[0];
 
     } catch (error) {
-      console.log("error while creating new template",error)
+      logger.error("Error while creating new template", { error })
         return null
     }
     }
@@ -63,7 +64,7 @@ export class TemplateRepository {
       const result = await this.pool.query(query , values)
       return result.rows[0];
     } catch (error) {
-      console.log("error while updating template", error);
+      logger.error("Error while updating template", { error });
       return null
     }
   }
@@ -74,7 +75,7 @@ export class TemplateRepository {
       const result = await this.pool.query(query, [userId]);
       return result.rows;
     } catch (error) {
-      console.log("error while fetching  user Teplates data from DB ",error)
+      logger.error("Error while fetching user templates from DB", { error })
       return null;
     }
     }
@@ -94,7 +95,7 @@ export class TemplateRepository {
       return template;
 
     } catch (error) {
-      console.log("error while getting template by id", error);
+      logger.error("Error while getting template by id", { error });
       return null;
     }
     }

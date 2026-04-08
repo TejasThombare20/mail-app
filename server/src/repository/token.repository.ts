@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import { IUserToken } from "../types/users.types";
+import logger from "../utils/logger";
 
 export class TokenRepository {
   constructor(private pool: Pool) {}
@@ -26,7 +27,7 @@ export class TokenRepository {
         uuidv4(),
       ]);
     } catch (error) {
-      console.log("error while saving user token", error);
+      logger.error("Error while saving user token", { error, userId });
     }
   }
 

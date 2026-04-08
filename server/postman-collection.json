@@ -1,0 +1,294 @@
+{
+  "info": {
+    "name": "Mail App API",
+    "description": "Complete API collection for the Mail App - Auth, Templates, Email, Attachments, and Log History.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "templateId",
+      "value": "REPLACE_WITH_TEMPLATE_ID",
+      "type": "string"
+    },
+    {
+      "key": "attachmentId",  
+      "value": "REPLACE_WITH_ATTACHMENT_ID",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Google OAuth URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/url",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google", "url"]
+            },
+            "description": "Returns the Google OAuth2 consent screen URL. Redirect the user to this URL to initiate sign-in."
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/callback?code=AUTHORIZATION_CODE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "AUTHORIZATION_CODE",
+                  "description": "The authorization code returned by Google after user consent"
+                }
+              ]
+            },
+            "description": "Handles the Google OAuth callback. Exchanges the authorization code for tokens, creates/updates the user, sets auth_token cookie, and redirects to the client."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Templates",
+      "item": [
+        {
+          "name": "Create Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Template\",\n  \"json_data\": {},\n  \"html_content\": \"<h1>Hello {{receiver_name}}</h1><p>Welcome to {{company_name}}!</p>\",\n  \"category\": \"marketing\",\n  \"attachments\": [],\n  \"local_variables\": [\n    {\n      \"key\": \"receiver_name\",\n      \"id\": \"local_1\",\n      \"description\": \"Recipient first name\"\n    }\n  ],\n  \"global_variables\": [\n    {\n      \"key\": \"company_name\",\n      \"id\": \"global_1\",\n      \"value\": \"Acme Corp\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            },
+            "description": "Creates a new email template. Requires authentication (auth_token cookie)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All User Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            },
+            "description": "Returns all templates for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Template By ID", 
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates", "{{templateId}}"]
+            },
+            "description": "Returns a single template by ID, including attachment data if present."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Template Name\",\n  \"html_content\": \"<h1>Updated content for {{receiver_name}}</h1>\",\n  \"category\": \"transactional\",\n  \"local_variables\": [\n    {\n      \"key\": \"receiver_name\",\n      \"id\": \"local_1\",\n      \"description\": \"Recipient first name\"\n    }\n  ],\n  \"global_variables\": [\n    {\n      \"key\": \"company_name\",\n      \"id\": \"global_1\",\n      \"value\": \"New Company\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates", "{{templateId}}"]
+            },
+            "description": "Updates an existing template. Only provided fields are updated (uses COALESCE)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Email",
+      "item": [
+        {
+          "name": "Send Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\"john@example.com\", \"jane@example.com\"],\n  \"subject\": \"Hello from Mail App\",\n  \"local_variables\": [\n    {\n      \"key\": \"receiver_name\",\n      \"description\": \"Recipient first name\",\n      \"id\": \"local_1\",\n      \"recipient_email\": \"john@example.com\",\n      \"value\": \"John\"\n    },\n    {\n      \"key\": \"receiver_name\",\n      \"description\": \"Recipient first name\",\n      \"id\": \"local_2\",\n      \"recipient_email\": \"jane@example.com\",\n      \"value\": \"Jane\"\n    }\n  ],\n  \"global_variables\": [\n    {\n      \"key\": \"company_name\",\n      \"value\": \"Acme Corp\",\n      \"id\": \"global_1\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/email/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "email", "{{templateId}}"]
+            },
+            "description": "Sends emails to recipients using a template. Supports per-recipient local variables (with recipient_email and value fields) and global variables. Each email is sent with a 2.5s delay. Sent records are saved to sent_email_records table."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Attachments",
+      "item": [
+        {
+          "name": "Upload Attachment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "The file to upload"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/files/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "upload"]
+            },
+            "description": "Uploads a file attachment to Firebase Storage. Returns the attachment metadata including signed URL (1-hour expiry)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Attachment with New Signed URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/attachment/{{attachmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "attachment", "{{attachmentId}}"]
+            },
+            "description": "Returns the attachment with a regenerated signed URL if expired."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All User Attachments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/user/attachments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "user", "attachments"]
+            },
+            "description": "Returns all attachments uploaded by the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Attachment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/{{attachmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "files", "{{attachmentId}}"]
+            },
+            "description": "Deletes an attachment from Firebase Storage and the database. Note: Uses GET method (as per current route definition)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Log History",
+      "item": [
+        {
+          "name": "Get Email Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/loghistory",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "loghistory"]
+            },
+            "description": "Returns paginated email sending logs for the authenticated user. Optionally pass last_sent_at as a path param for cursor-based pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Email Logs (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/loghistory/2025-01-01T00:00:00.000Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "loghistory", "2025-01-01T00:00:00.000Z"]
+            },
+            "description": "Returns email logs sent before the given timestamp (cursor-based pagination)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auth is handled via auth_token cookie.",
+          "// After calling the Google OAuth callback, Postman will store the cookie automatically.",
+          "// Alternatively, manually set the auth_token cookie in Postman's cookie manager."
+        ]
+      }
+    }
+  ]
+}

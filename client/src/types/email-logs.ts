@@ -1,21 +1,30 @@
 import { GlobalTemplateVariable, TemplateVariable } from "./template-types";
 
-
-export interface receiver_emails {
-    email: string;
-    status : string;
-    variables : TemplateVariable[]
+// Per-recipient email log entry
+export interface EmailLogEntry {
+  id: number;
+  session_id: string;
+  recipient_email: string;
+  local_variables: TemplateVariable[];
+  status: string;
+  sent_at: string;
+  last_updated: string;
 }
 
-export  interface getEmailLogsApiResponse {
-    id: string;
-    user_id: string;
-    template_id: string;
-    template_name: string;
-    global_variables: GlobalTemplateVariable[]; 
-    receiver_emails: receiver_emails[]; 
-    subject: string;
-    status: string;
-    sent_at: string;
-    last_updated: Date;
-  };
+// Session-level response (replaces old getEmailLogsApiResponse)
+export interface getEmailLogsApiResponse {
+  id: string;
+  user_id: string;
+  template_id: string;
+  template_name: string;
+  subject: string;
+  global_variables: GlobalTemplateVariable[];
+  total_emails: number;
+  sent_count: number;
+  failed_count: number;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+  email_logs: EmailLogEntry[];
+}

@@ -1,7 +1,7 @@
 CREATE TABLE email_logs (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(30) REFERENCES users(id),
-    template_id INT REFERENCES templates(id),
+    template_id UUID REFERENCES templates(id),
     global_variables JSONB, 
     receiver_emails JSONB,  
     subject VARCHAR(255),
