@@ -23,13 +23,13 @@ export async function checkMXRecord(email: string): Promise<boolean> {
  */
 export function extractReceiverNameFromEmail(email: string): string {
   if (!email || typeof email !== 'string') {
-    return 'Dude';
+    return '';
   }
-  
+
   try {
     // Get the part before @
     const localPart = email.split('@')[0];
-    
+
     let name = '';
     // If it contains a dot, return the part before the dot
     if (localPart.includes('.')) {
@@ -38,13 +38,29 @@ export function extractReceiverNameFromEmail(email: string): string {
       // Otherwise return the whole local part
       name = localPart;
     }
-    
+
     // Capitalize the first letter
     return name.charAt(0).toUpperCase() + name.slice(1);
   } catch (error) {
     // Return fallback if any error occurs
-    return 'Dude';
+    return '';
   }
+}
+
+/**
+ * Sanitizes text by replacing common problematic Unicode characters with ASCII equivalents.
+ * Prevents encoding issues like em-dash (—) becoming garbled (Ã¢Â€Â") in emails.
+ */
+export function sanitizeNonAscii(text: string): string {
+  return text
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')   // Smart double quotes -> regular
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")    // Smart single quotes -> regular
+    .replace(/\u2014/g, '-')                         // Em-dash -> hyphen
+    .replace(/\u2013/g, '-')                         // En-dash -> hyphen
+    .replace(/\u2026/g, '...')                       // Ellipsis -> three dots
+    .replace(/\u00A0/g, ' ')                         // Non-breaking space -> regular space
+    .replace(/\u2022/g, '*')                         // Bullet -> asterisk
+    .replace(/[^\x00-\x7F]/g, ' ');                  // Any remaining non-ASCII -> space
 }
 
 export function createEmailBody(

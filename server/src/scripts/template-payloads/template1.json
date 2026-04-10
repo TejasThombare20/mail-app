@@ -1,0 +1,13 @@
+{
+  "name": "Referral Request - Generic",
+  "description": "Cold email asking for a referral from someone you do not know directly",
+  "category": "job-referral",
+  "html_content": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n  <title>Referral Email Template</title>\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #ffffff;\">\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n    <tr>\n      <td style=\"padding: 20px 24px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #222222;\">\n\n        <p style=\"margin: 0 0 16px 0;\">\n          Hello <strong>{{receiver_name}}</strong>,\n        </p>\n\n        <p style=\"margin: 0 0 16px 0;\">\n          Apologies for the cold email &#8212; I&#39;ll keep it brief.\n        </p>\n\n        <p style=\"margin: 0 0 16px 0;\">\n          I&#39;m <strong>Tejas</strong>, an <strong>SDE-1</strong> at <strong>Interface.ai</strong> with 2 years of experience (including internship) at <strong>YC-backed</strong> and well-funded startups, including one backed by <strong>WhatsApp&#39;s co-founder</strong>. I studied at <strong>IIIT Gwalior</strong> and have a strong background in distributed systems, open-source contributions, and problem solving (<strong>Knight</strong> on LeetCode, <strong>1880+</strong> rating).\n        </p>\n\n        <p style=\"margin: 0 0 16px 0;\">\n          I noticed <strong>{{company_name}}</strong> is hiring for the <strong>{{ROLE}}</strong> role and feel my experience could be a good fit. If you&#39;re comfortable, would you be open to referring me? I&#39;ve attached my resume so you can take a look &#8212; no worries at all if it doesn&#39;t feel right.\n        </p>\n\n        <p style=\"margin: 0 0 4px 0;\">\n          Really appreciate you reading this far. Thanks!\n        </p>\n\n        <p style=\"margin: 0; line-height: 1.5;\">\n          Tejas Thombare\n        </p>\n\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+  "local_variables": [
+    { "key": "receiver_name", "id": "local_receiver_name", "description": "Recipient first name" }
+  ],
+  "global_variables": [
+    { "key": "company_name", "id": "global_company_name", "description": "Target company name" },
+    { "key": "ROLE", "id": "global_role", "description": "Job role title (e.g. SDE, SDE-2)", "value": "SDE" }
+  ]
+}

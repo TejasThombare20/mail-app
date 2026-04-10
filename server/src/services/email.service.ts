@@ -1,3 +1,95 @@
+/**
+ * ============================================================================
+ * EMAIL SERVICE — Template Management & Email Sending
+ * ============================================================================
+ *
+ * SUPPORTED EMAIL TEMPLATES:
+ * ────────────────────────────
+ *
+ * Template 1: "Referral Request" (DEFAULT)
+ * ──────────────────────────────────────
+ * Use Case: Cold email asking someone you don't know directly for a referral
+ * Context: General outreach to networks, colleagues, or professionals in target companies
+ * Tone: Polite, brief, respectful of their time
+ * Placeholders: {{receiver_name}}, {{company_name}}, {{ROLE}}, {{JOB_ID}}, {{portal_link}}
+ *
+ * Content excerpt:
+ *   "Apologies for the cold email — I'll keep it brief."
+ *   "...feel my experience could be a good fit. If you're comfortable, would you be
+ *    open to referring me?"
+ *
+ * When to use: Default choice unless user specifies otherwise
+ *
+ * ---
+ *
+ * Template 2: "Direct Hiring Manager Outreach"
+ * ────────────────────────────────────────────
+ * Use Case: Reaching out directly to a hiring manager after seeing their LinkedIn post
+ * Context: Direct application after manager publicly posts about an opening
+ * Tone: Professional, enthusiastic, direct
+ * Placeholders: {{receiver_name}}, {{company_name}}, {{ROLE}}, {{portal_link}}
+ *
+ * Content excerpt:
+ *   "I came across your LinkedIn post about the {{ROLE}} opening on your team at {{company_name}},
+ *    and I'd love to be considered for the role."
+ *   "I've attached my resume for your review. Would be happy to share more details
+ *    or hop on a quick call at your convenience."
+ *
+ * When to use: When the user has a direct contact with the hiring manager or found them
+ *              via their public job posting on LinkedIn
+ *
+ * ---
+ *
+ * Template 3: "Team Member Indirect Referral"
+ * ──────────────────────────────────────────
+ * Use Case: Outreach to a team member (not the hiring manager) to forward resume
+ * Context: When you have a connection at the company but not the hiring manager
+ * Tone: Friendly, respectful, asks for help without pressure
+ * Placeholders: {{receiver_name}}, {{company_name}}, {{ROLE}}, {{portal_link}}
+ *
+ * Content excerpt:
+ *   "Since you're on the team, I thought you might be the right person to reach out to."
+ *   "If my profile seems like a fit, would you mind forwarding my resume to the hiring
+ *    manager or pointing me to the best way to apply?"
+ *
+ * When to use: When reaching out to a team member who can help forward your application
+ *              to the right person or department
+ *
+ * ============================================================================
+ * PLACEHOLDER QUICK REFERENCE:
+ * ============================================================================
+ *
+ * Mandatory Placeholders:
+ *   {{receiver_name}}    — Recipient's first name (auto-extracted from email or provided)
+ *   {{company_name}}     — Company name (global variable, applies to all recipients)
+ *   {{portal_link}}      — URL to job posting, LinkedIn post, or career portal
+ *
+ * Optional Placeholders (have sensible defaults):
+ *   {{ROLE}}             — Job role name (defaults to "SDE" if not provided)
+ *   {{JOB_ID}}           — Job posting ID (Template 1 only, can be empty)
+ *
+ * Empty Placeholder Handling:
+ *   The service automatically removes empty placeholders and fixes surrounding whitespace.
+ *   Example: "Hi {{receiver_name}}" → "Hi" (if receiver_name is empty)
+ *
+ * ============================================================================
+ * WHEN SENDING EMAILS — DECISION FLOWCHART:
+ * ============================================================================
+ *
+ * 1. Is the recipient a HIRING MANAGER with a public job post?
+ *    → Use Template 2 (Direct Hiring Manager Outreach)
+ *
+ * 2. Is the recipient a TEAM MEMBER who works at the company?
+ *    → Use Template 3 (Team Member Indirect Referral)
+ *
+ * 3. Is the recipient someone you don't know well / cold outreach?
+ *    → Use Template 1 (Referral Request) — DEFAULT
+ *
+ * If unsure, default to Template 1.
+ *
+ * ============================================================================
+ */
+
 import { google } from "googleapis";
 import { gmail_v1 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
@@ -10,6 +102,7 @@ import {
   createEmailBody,
   extractReceiverNameFromEmail,
   isValidEmail,
+  sanitizeNonAscii,
 } from "../utils/validate-email";
 import { AttachmentRepository } from "../repository/attachment.repository";
 import { Attachment, EmailAttachment } from "../types/attachment.types";
@@ -21,6 +114,39 @@ import pool from '../config/database';
 
 // Helper function to add delay between emails
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const EMPTY_SENTINEL = '%%EMPTY%%';
+
+/**
+ * Replaces a template placeholder in text.
+ * When the value is empty, inserts a sentinel marker instead.
+ * Call cleanupEmptyPlaceholders() after all replacements to remove
+ * sentinels and fix surrounding whitespace.
+ */
+function replacePlaceholder(text: string, key: string, value: string): string {
+  const regex = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+  if (value && value.trim().length > 0) {
+    return text.replace(regex, value);
+  }
+  return text.replace(regex, EMPTY_SENTINEL);
+}
+
+/**
+ * Removes sentinel markers left by empty placeholder replacements,
+ * collapses surrounding whitespace, and trims space before punctuation.
+ *
+ * "Hello %%EMPTY%%,"  → "Hello,"
+ * "Hi %%EMPTY%% - X"  → "Hi - X"
+ */
+function cleanupEmptyPlaceholders(text: string): string {
+  // Replace sentinel + surrounding spaces with a single space
+  text = text.replace(new RegExp(`\\s*${EMPTY_SENTINEL}\\s*`, 'g'), '');
+  // Remove space before punctuation ("Hello ," → "Hello,")
+  text = text.replace(/\s+([,.!?;:])/g, '$1');
+  // Collapse multiple spaces
+  text = text.replace(/\s{2,}/g, ' ');
+  return text.trim();
+}
 
 export class EmailService {
   private oauth2Client: OAuth2Client;
@@ -199,41 +325,43 @@ export class EmailService {
 
       // Replace global variables in both HTML and subject
       global_variables.forEach(({ key, value }) => {
-        const regex = new RegExp(`{{${key}}}`, "g");
-        personalizedHtml = personalizedHtml.replace(regex, String(value));
-        personalizedSubject = personalizedSubject.replace(regex, String(value));
+        personalizedHtml = replacePlaceholder(personalizedHtml, key, String(value ?? ''));
+        personalizedSubject = replacePlaceholder(personalizedSubject, key, String(value ?? ''));
       });
 
-      // Find per-recipient local variables (those with recipient_email and value set)
+      // Find per-recipient local variables (those with recipient_email; value can be empty)
       const recipientLocalVars = local_variables.filter(
-        (v) => v.recipient_email && v.recipient_email === recipient && v.value
+        (v) => v.recipient_email && v.recipient_email === recipient && v.value !== undefined && v.value !== null
       );
 
       if (recipientLocalVars.length > 0) {
         // Use per-recipient local variable values for replacement in HTML and subject
         recipientLocalVars.forEach(({ key, value }) => {
-          const regex = new RegExp(`{{${key}}}`, "g");
-          personalizedHtml = personalizedHtml.replace(regex, String(value));
-          personalizedSubject = personalizedSubject.replace(regex, String(value));
+          personalizedHtml = replacePlaceholder(personalizedHtml, key, String(value ?? ''));
+          personalizedSubject = replacePlaceholder(personalizedSubject, key, String(value ?? ''));
         });
       } else {
         // Fallback: extract receiver name from email for {{receiver_name}}
         const receiverName = extractReceiverNameFromEmail(recipient);
-        const nameRegex = new RegExp(`{{receiver_name}}`, "g");
-        personalizedHtml = personalizedHtml.replace(nameRegex, receiverName);
-        personalizedSubject = personalizedSubject.replace(nameRegex, receiverName);
+        personalizedHtml = replacePlaceholder(personalizedHtml, 'receiver_name', receiverName);
+        personalizedSubject = replacePlaceholder(personalizedSubject, 'receiver_name', receiverName);
 
         // Also apply any generic local variables (without recipient_email)
         local_variables
           .filter((v) => !v.recipient_email)
           .forEach(({ key, value }) => {
-            if (value) {
-              const regex = new RegExp(`{{${key}}}`, "g");
-              personalizedHtml = personalizedHtml.replace(regex, String(value));
-              personalizedSubject = personalizedSubject.replace(regex, String(value));
-            }
+            personalizedHtml = replacePlaceholder(personalizedHtml, key, String(value ?? ''));
+            personalizedSubject = replacePlaceholder(personalizedSubject, key, String(value ?? ''));
           });
       }
+      logger.info("personalized html",personalizedHtml)
+      // Clean up empty placeholder sentinels and fix surrounding whitespace
+      personalizedHtml = cleanupEmptyPlaceholders(personalizedHtml);
+      personalizedSubject = cleanupEmptyPlaceholders(personalizedSubject);
+
+      // Sanitize non-ASCII characters to prevent encoding issues (e.g., em-dash -> garbled text)
+      personalizedSubject = sanitizeNonAscii(personalizedSubject);
+      personalizedHtml = sanitizeNonAscii(personalizedHtml);
 
       // Create per-recipient email log with "pending" status
       const recipientVarsForLog = recipientLocalVars.length > 0

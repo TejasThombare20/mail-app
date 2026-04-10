@@ -86,12 +86,12 @@ export class TemplateRepository {
          `SELECT * FROM templates WHERE id = $1 AND user_id = $2;`,
         [id , user_id]
       );
-      
+
       if (!result.rows[0]) return null;
-      
+
       const template = result.rows[0];
-      template.attachments = template.attachments[0] ? template.attachments : [];
-      
+      template.attachments = Array.isArray(template.attachments) && template.attachments[0] ? template.attachments : [];
+
       return template;
 
     } catch (error) {
