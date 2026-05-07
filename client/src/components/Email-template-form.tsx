@@ -505,12 +505,17 @@ const EmailTemplateForm = ({ template }: EmailTemplateFormProps) => {
                             onLoad={() => {
                               if (
                                 emailEditorRef.current &&
-                                emailEditorRef.current.editor &&
-                                field.value
+                                emailEditorRef.current.editor
                               ) {
-                                emailEditorRef.current.editor.loadDesign(
-                                  field.value
-                                );
+                                // Only load design if json_data has actual content (not empty {})
+                                if (
+                                  field.value &&
+                                  Object.keys(field.value).length > 0
+                                ) {
+                                  emailEditorRef.current.editor.loadDesign(
+                                    field.value
+                                  );
+                                }
                                 emailEditorRef.current.editor.setAppearance({
                                   theme: "modern_dark",
                                 });

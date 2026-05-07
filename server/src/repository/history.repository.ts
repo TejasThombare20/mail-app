@@ -244,6 +244,67 @@ export class HistoryRepository {
     }
   }
 
+  // ── Bounce scan methods ───────────────────────────────────────────
+
+  /**
+   * Returns completed sessions whose scan_status is 'pending'.
+   * These are sessions that need to be checked for bounces.
+   */
+  async getPendingScanSessions(): Promise<
+    Array<{
+      id: string;
+      user_id: string;
+      started_at: Date;
+      completed_at: Date | null;
+      sent_count: number;
+      failed_count: number;
+    }>
+  > {
+    const result = await this.pool.query(
+      `SELECT id, user_id, started_at, completed_at, sent_count, failed_count
+       FROM email_sessions
+       WHERE scan_status = 'pending'
+         AND status IN ('completed', 'failed')
+       ORDER BY started_at ASC`
+    );
+    return result.rows;
+  }
+
+  async updateScanStatus(sessionId: string, scanStatus: string) {
+    await this.pool.query(
+      `UPDATE email_sessions SET scan_status = $1 WHERE id = $2`,
+      [scanStatus, sessionId]
+    );
+  }
+
+  /**
+   * Get all email logs for a session that were marked as 'sent'.
+   */
+  async getSentEmailLogsForSession(
+    sessionId: string
+  ): Promise<Array<{ id: number; recipient_email: string; sent_at: Date }>> {
+    const result = await this.pool.query(
+      `SELECT id, recipient_email, sent_at
+       FROM email_logs
+       WHERE session_id = $1 AND status = 'sent'`,
+      [sessionId]
+    );
+    return result.rows;
+  }
+
+  /**
+   * Update session counts after bounce scan discovers failures.
+   */
+  async incrementFailedCount(sessionId: string, newFailures: number) {
+    await this.pool.query(
+      `UPDATE email_sessions
+       SET sent_count = sent_count - $1,
+           failed_count = failed_count + $1
+       WHERE id = $2`,
+      [newFailures, sessionId]
+    );
+  }
+
   // ── Legacy compat methods (kept for any existing callers) ────────
 
   async create(data: {

@@ -30,6 +30,10 @@ import { SentEmailRecordsRepository } from './repository/sentEmailRecords.reposi
 import { SentEmailRecordsService } from './services/sentEmailRecords.service';
 import { SentEmailRecordsController } from './controllers/sentEmailRecords.controller';
 import { createSentEmailRecordsRouter } from './routes/sentEmailRecords.routes';
+import { BounceScanService } from './services/bounceScan.service';
+import { BounceScanController } from './controllers/bounceScan.controller';
+import { createBounceScanRouter } from './routes/bounceScan.routes';
+import { startBounceScanCron } from './cron/bounceScan.cron';
 
 dotenv.config();
 
@@ -68,6 +72,7 @@ const attachmentService = new AttachmentService(attachmentsRepository ,firebaseS
 const emailService = new EmailService(tokenRepository, templateRepository,historyRepository,attachmentsRepository,attachmentService );
 const logHistoryService = new LogHistoryService(logHistoryRepository)
 const sentEmailRecordsService = new SentEmailRecordsService(sentEmailRecordsRepository)
+const bounceScanService = new BounceScanService(tokenRepository, historyRepository)
 
 
 const authController = new AuthController(authService, userRepository);
@@ -76,6 +81,7 @@ const attachmentController = new AttachmentController(attachmentService);
 const emailController = new EmailController(emailService)
 const logHistoryController = new LogHistoryController(logHistoryService)
 const sentEmailRecordsController = new SentEmailRecordsController(sentEmailRecordsService)
+const bounceScanController = new BounceScanController(bounceScanService)
 
 
 
@@ -90,6 +96,10 @@ app.use('/api/files',createAttachmentRouter(attachmentController))
 app.use('/api/email',createEmailRouter(emailController))
 app.use('/api/loghistory', createLogHistoryRouter(logHistoryController))
 app.use('/api/sent-records', createSentEmailRecordsRouter(sentEmailRecordsController))
+app.use('/api/bounce-scan', createBounceScanRouter(bounceScanController))
+
+// Start the bounce scan cron job (every 10 minutes)
+startBounceScanCron(bounceScanService);
 
 const port = process.env.PORT || 8000;
   app.listen(port, () => {

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "../components/ui-component/Table";
 import { Button } from "../components/ui-component/Button";
+import { Badge } from "../components/ui-component/Badge";
 import { Search, ChevronLeft, ChevronRight, Mail } from "lucide-react";
 import { formatDate } from "../lib/utils";
 import ThemeToggle from "../components/Theme-toggle";
@@ -29,6 +30,7 @@ interface SentEmailRecord {
   last_name: string | null;
   email: string;
   sent_at: string;
+  type: "sent" | "imported";
   created_at: string;
 }
 
@@ -219,13 +221,14 @@ const SentRecordsPage = () => {
                 <TableHead>First Name</TableHead>
                 <TableHead>Last Name</TableHead>
                 <TableHead>Company</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Sent At</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10">
+                  <TableCell colSpan={6} className="text-center py-10">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                       Loading...
@@ -235,7 +238,7 @@ const SentRecordsPage = () => {
               ) : sortedRecords.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center py-10 text-muted-foreground"
                   >
                     No records found
@@ -250,6 +253,13 @@ const SentRecordsPage = () => {
                     <TableCell>{record.first_name || "-"}</TableCell>
                     <TableCell>{record.last_name || "-"}</TableCell>
                     <TableCell>{record.company_name || "-"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={record.type === "sent" ? "default" : "secondary"}
+                      >
+                        {record.type}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{formatDate(record.sent_at)}</TableCell>
                   </TableRow>
                 ))

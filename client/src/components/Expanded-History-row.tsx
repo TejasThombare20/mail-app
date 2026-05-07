@@ -21,7 +21,7 @@ const ExpandedHistoryrow = ({ row, columns }: Props) => {
   return (
     <TableRow className="hover:bg-transparent">
       <TableCell colSpan={columns.length}>
-        <div className="p-4 bg-white border rounded-md">
+        <div className="p-4 bg-card border rounded-md">
           <h4 className="text-sm font-semibold mb-2">Recipients</h4>
           <ScrollArea className="h-auto max-h-[300px] overflow-y-scroll">
             <div className="grid grid-cols-2 gap-4">

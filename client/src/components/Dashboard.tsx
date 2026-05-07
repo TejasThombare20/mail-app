@@ -129,15 +129,20 @@ const Dashboard = () => {
   const emailsPerSession = [...sessions]
     .reverse()
     .slice(-15)
-    .map((s, i) => ({
-      name: s.subject
-        ? s.subject.length > 20
-          ? s.subject.slice(0, 20) + "..."
-          : s.subject
-        : `Session ${i + 1}`,
-      sent: s.sent_count,
-      failed: s.failed_count,
-    }));
+    .map((s, i) => {
+      const companyLabel =
+        s.recipient_companies.length > 0
+          ? s.recipient_companies.join(", ")
+          : `Session ${i + 1}`;
+      return {
+        name:
+          companyLabel.length > 25
+            ? companyLabel.slice(0, 25) + "..."
+            : companyLabel,
+        sent: s.sent_count,
+        failed: s.failed_count,
+      };
+    });
 
   // Session status pie chart
   const statusPieData = [
@@ -268,6 +273,7 @@ const Dashboard = () => {
                   />
                   <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                   <Tooltip
+                    cursor={{ fill: "transparent" }}
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
@@ -275,15 +281,17 @@ const Dashboard = () => {
                       color: "hsl(var(--foreground))",
                     }}
                   />
+                  <Legend />
                   <Bar
                     dataKey="sent"
                     name="Sent"
+                    stackId="emails"
                     fill="#22c55e"
-                    radius={[4, 4, 0, 0]}
                   />
                   <Bar
                     dataKey="failed"
                     name="Failed"
+                    stackId="emails"
                     fill="#ef4444"
                     radius={[4, 4, 0, 0]}
                   />
@@ -304,29 +312,34 @@ const Dashboard = () => {
                 No session data yet
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={statusPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={4}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {statusPieData.map((_entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={PIE_COLORS[index % PIE_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie
+                      data={statusPieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={4}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {statusPieData.map((_entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={PIE_COLORS[index % PIE_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Note: This chart shows fully completed vs fully failed sessions, not individual email success/failure counts.
+                </p>
+              </>
             )}
           </CardContent>
         </Card>

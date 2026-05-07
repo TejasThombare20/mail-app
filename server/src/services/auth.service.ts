@@ -69,15 +69,18 @@ export class AuthService {
         name: userInfo?.name,
         picture: userInfo?.picture,
         id: userInfo?.id,
-      });
-
-      await this.tokenRepository.saveUserToken(
-        user.id,
-        tokens.access_token!,
-        new Date(tokens.expiry_date!),
-        tokens.refresh_token!
-      );
+      });         
     }
+
+    // Always update tokens on sign-in (handles both new and existing users)
+    // Note: Google only returns refresh_token on first consent or when prompt=consent is forced.
+    // Pass it as-is — saveUserToken uses COALESCE to preserve existing refresh_token if null.
+    await this.tokenRepository.saveUserToken(
+      user.id,
+      tokens.access_token!,
+      new Date(tokens.expiry_date!),
+      tokens.refresh_token ?? undefined
+    );
 
     // Generate JWT for API authentication  
     const jwtToken = this.generateJWT(user);

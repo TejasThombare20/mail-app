@@ -155,7 +155,7 @@ const Historytable = () => {
                             data-state={row.getIsExpanded() && "expanded"}
                             className={
                               row.getIsExpanded()
-                                ? "bg-slate-50 rounded-md "
+                                ? "bg-muted/30 rounded-md "
                                 : ""
                             }
                           >

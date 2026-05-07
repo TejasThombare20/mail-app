@@ -8,6 +8,7 @@ export interface SentEmailRecord {
   last_name: string | null;
   email: string;
   sent_at: string;
+  type: "sent" | "imported";
   created_at: string;
   updated_at: string;
 }

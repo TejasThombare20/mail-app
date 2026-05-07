@@ -4,6 +4,7 @@ import { TemplateService } from "../services/template.service";
 import { EmailService } from "../services/email.service";
 import { AttachmentService } from "../services/attachment.service";
 import logger from "../utils/logger";
+import { htmlToUnlayerDesign, isEmptyDesign } from "../utils/html-to-unlayer-design";
 export class TemplateController {
   constructor(
     private templateService: TemplateService,
@@ -14,10 +15,17 @@ export class TemplateController {
   createTemplate = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { name, json_data, html_content, category, attachments, local_variables , global_variables } = req.body;
+
+      // If json_data is missing/empty but html_content is provided, generate Unlayer design from HTML
+      const resolvedJsonData =
+        isEmptyDesign(json_data) && html_content
+          ? htmlToUnlayerDesign(html_content)
+          : json_data;
+
       const template = await this.templateService.createTemplate({
         user_id: req.user!.userId,
         name,
-        json_data: json_data,
+        json_data: resolvedJsonData,
         html_content: html_content,
         attachments: attachments,
         category,
@@ -132,6 +140,12 @@ export class TemplateController {
         res.status(404).json({ error: "Template not found" });
         return;
       }
+
+      // If json_data is empty but html_content exists, generate Unlayer design on-the-fly
+      if (isEmptyDesign(template.json_data) && template.html_content) {
+        template.json_data = htmlToUnlayerDesign(template.html_content);
+      }
+
       const attachments = template.attachments;
 
       if (attachments && attachments.length > 0) {

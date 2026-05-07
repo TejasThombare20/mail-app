@@ -148,6 +148,19 @@ function cleanupEmptyPlaceholders(text: string): string {
   return text.trim();
 }
 
+/**
+ * Replaces any remaining unmatched placeholders with empty strings.
+ * This ensures no {{variable}} patterns are left in the final email.
+ *
+ * Example: "Hello {{name}} - {{unknown}}" → "Hello  - "
+ * Then cleanupEmptyPlaceholders() will fix spacing.
+ */
+function replaceRemainingPlaceholders(text: string): string {
+  // Match any remaining {{...}} placeholders and replace with EMPTY_SENTINEL
+  text = text.replace(/\{\{[^}]+\}\}/g, EMPTY_SENTINEL);
+  return text;
+}
+
 export class EmailService {
   private oauth2Client: OAuth2Client;
   constructor(
@@ -355,6 +368,11 @@ export class EmailService {
           });
       }
       logger.info("personalized html",personalizedHtml)
+
+      // Replace any remaining unmatched placeholders with empty strings
+      personalizedHtml = replaceRemainingPlaceholders(personalizedHtml);
+      personalizedSubject = replaceRemainingPlaceholders(personalizedSubject);
+
       // Clean up empty placeholder sentinels and fix surrounding whitespace
       personalizedHtml = cleanupEmptyPlaceholders(personalizedHtml);
       personalizedSubject = cleanupEmptyPlaceholders(personalizedSubject);
@@ -404,23 +422,22 @@ export class EmailService {
 
           await this.historyRepository.updateEmailLogStatus(emailLog.id, "sent");
 
-          // Upsert into sent_email_records
+          // Insert into sent_email_records only if email doesn't already exist
           try {
             const firstName = recipientLocalVars.find((v) => v.key === "receiver_name")?.value
               || extractReceiverNameFromEmail(recipient);
             const companyName = global_variables.find((v) => v.key === "company_name")?.value || null;
 
             await pool.query(
-              `INSERT INTO sent_email_records (first_name, email, company_name, sent_at)
-               VALUES ($1, $2, $3, NOW())
+              `INSERT INTO sent_email_records (first_name, email, company_name, sent_at, type)
+               VALUES ($1, $2, $3, NOW(), 'sent')
                ON CONFLICT (email) DO UPDATE
-                 SET first_name = EXCLUDED.first_name,
-                     company_name = COALESCE(EXCLUDED.company_name, sent_email_records.company_name),
-                     sent_at = EXCLUDED.sent_at`,
+                 SET type     = 'sent',
+                     sent_at  = EXCLUDED.sent_at`,
               [firstName, recipient, companyName]
             );
           } catch (recordErr) {
-            logger.error("Failed to upsert sent_email_record", { recipient, error: recordErr });
+            logger.error("Failed to insert sent_email_record", { recipient, error: recordErr });
           }
         } else {
           emailStatuses.push({ email: recipient, status: "failed" });

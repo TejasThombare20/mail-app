@@ -12,6 +12,7 @@ export interface EmailSession {
   sent_count: number;
   failed_count: number;
   status: string;
+  scan_status: 'pending' | 'in_progress' | 'done';
   started_at: Date;
   completed_at: Date | null;
   created_at: Date;
